@@ -37,6 +37,15 @@ interface OpportuniteDetail {
   saisiPar?: string // membre qui a saisi la fiche, s'il diffère de l'apporteur
   moteur?: string
   preneur?: string // freelance retenu, renseigné à la signature
+  actionsAutorisees: {
+    qualifier: boolean
+    sePositionner: boolean
+    choisirProfils: boolean
+    changerStatut: boolean
+    cloturer: boolean
+    ajouterNote: boolean
+    gererContacts: boolean
+  }
   tjmAnnonce?: number
   tjmClient?: number
   tjmPreneur?: number

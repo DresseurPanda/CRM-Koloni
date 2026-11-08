@@ -1,6 +1,7 @@
 // Fiche complète d'une opportunité : la fiche, ses technologies, contacts, positionnements et notes,
 // sa date d'ouverture à l'extérieur, et le fil qui réunit l'historique des statuts et le journal d'actions
 import * as z from 'zod'
+import { calculerActionsAutoriseesOpportunite } from '../../utils/droitsOpportunite'
 
 const params = z.object({
   id: z.string().regex(/^\d+$/)
@@ -20,8 +21,8 @@ interface LigneOpportunite {
   client_final_taille: string | null
   apporteur_id: string
   apporteur: string
-  saisi_par: string | null
   moteur_id: string | null
+  saisi_par: string | null
   moteur: string | null
   preneur: string | null
   tjm_annonce: string | null
@@ -42,8 +43,10 @@ interface LigneOpportunite {
   date_relance: string | null
   raison_perte: string | null
   qualifiee_par: string | null
+  qualifiee_par_id: string | null
   date_qualification: string | null
   date_ouverture_exterieur: string | null
+  positionne: boolean
 }
 
 interface LigneFil {
@@ -62,7 +65,7 @@ interface LigneFil {
 const nombre = (valeur: string | null) => (valeur === null ? undefined : Number(valeur))
 
 export default defineEventHandler(async (event) => {
-  await exigerSession(event)
+  const session = await exigerSession(event)
   const { id } = await getValidatedRouterParams(event, params.parse)
   const sql = useDb(event)
 
@@ -73,6 +76,14 @@ export default defineEventHandler(async (event) => {
       o.apporteur_id::text, a.prenom || ' ' || a.nom AS apporteur,
       s.prenom || ' ' || s.nom AS saisi_par,
       o.moteur_id::text, mo.prenom || ' ' || mo.nom AS moteur,
+      o.qualifiee_par_id::text,
+      EXISTS (
+        SELECT 1
+        FROM positionnement p
+        WHERE p.opportunite_id = o.id
+          AND p.membre_id = ${session.user.id}
+          AND p.etat <> 'retire'
+      ) AS positionne,
       COALESCE(pm.prenom || ' ' || pm.nom, pe.prenom || ' ' || pe.nom) AS preneur,
       o.tjm_annonce::text, o.tjm_client::text, o.tjm_preneur::text, o.duree_annoncee_mois::text, o.nombre_jours,
       o.charge, o.ville, o.mode, o.timing, o.mode_candidature, o.mode_candidature_precision,
@@ -98,6 +109,16 @@ export default defineEventHandler(async (event) => {
   if (!o) {
     throw createError({ statusCode: 404, statusMessage: 'Opportunité introuvable' })
   }
+  const actionsAutorisees = calculerActionsAutoriseesOpportunite({
+    role: session.role,
+    membreId: session.user.id,
+    apporteurId: o.apporteur_id,
+    moteurId: o.moteur_id,
+    modeCandidature: o.mode_candidature,
+    statut: o.statut,
+    qualifiee: o.qualifiee_par_id !== null,
+    positionne: o.positionne
+  })
 
   const [technologies, contacts, positionnements, notes, fil] = await Promise.all([
     // La technologie principale d'abord
@@ -170,6 +191,7 @@ export default defineEventHandler(async (event) => {
     saisiPar: nullEnUndefined(o.saisi_par),
     moteur: nullEnUndefined(o.moteur),
     preneur: nullEnUndefined(o.preneur),
+    actionsAutorisees,
     tjmAnnonce: nombre(o.tjm_annonce),
     tjmClient: nombre(o.tjm_client),
     tjmPreneur: nombre(o.tjm_preneur),
