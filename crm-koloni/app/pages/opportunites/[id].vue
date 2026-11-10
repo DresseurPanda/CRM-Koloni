@@ -129,19 +129,41 @@
           icon="i-lucide-users"
           title="Positionnements"
         >
-          <!-- Lecture seule pour l'instant : se positionner et se désister arrivent avec le lot D -->
-          <ListePersonnes
-            :personnes="personnesPositionnees"
-            label="Membres positionnés"
-            :categories="ETATS_POSITIONNEMENT"
-            :categories-masquees="['Écarté', 'Retiré']"
-          />
-          <p
-            v-if="!opportunite.positionnements.length"
-            :class="CLASSE_MESSAGE_VIDE"
-          >
-            Aucun membre positionné.
-          </p>
+          <div class="space-y-4">
+            <!-- Boutons d'action : Se positionner / Se désister -->
+            <div class="flex gap-2">
+              <UButton
+                v-if="!estPositionne"
+                label="Se positionner"
+                color="primary"
+                icon="i-lucide-user-plus"
+                :loading="chargementPositionnement"
+                @click="sePositionner"
+              />
+              <UButton
+                v-else
+                label="Se désister"
+                color="neutral"
+                variant="outline"
+                icon="i-lucide-user-minus"
+                :loading="chargementPositionnement"
+                @click="seDesister"
+              />
+            </div>
+
+            <ListePersonnes
+              :personnes="personnesPositionnees"
+              label="Membres positionnés"
+              :categories="ETATS_POSITIONNEMENT"
+              :categories-masquees="['Écarté', 'Retiré']"
+            />
+            <p
+              v-if="!opportunite.positionnements.length"
+              :class="CLASSE_MESSAGE_VIDE"
+            >
+              Aucun membre positionné.
+            </p>
+          </div>
         </CarteTitree>
 
         <CarteTitree
@@ -231,7 +253,6 @@ const blocs = computed(() => {
         { label: 'Type de mission', valeur: o.typeMission },
         { label: 'Niveau recherché', valeur: o.niveauRecherche },
         { label: 'Température', valeur: o.temperature },
-        // Client final inconnu : on montre son secteur et sa taille à la place
         o.clientFinal
           ? { label: 'Client final', valeur: o.clientFinal }
           : { label: 'Client final (inconnu)', valeur: [o.clientFinalSecteur, o.clientFinalTaille].filter(Boolean).join(', ') },
@@ -243,7 +264,6 @@ const blocs = computed(() => {
           valeur: o.qualifieePar ? `${o.qualifieePar}, le ${formaterDate(o.dateQualification)}` : 'Pas encore qualifiée'
         },
         { label: 'Ouverture à l\'extérieur', valeur: o.dateOuvertureExterieur ? `À partir du ${formaterDate(o.dateOuvertureExterieur)}` : 'Sans objet' },
-        // Champs propres à certains statuts : relance, perte, signature
         ...(o.dateRelance ? [{ label: 'Date de relance', valeur: formaterDate(o.dateRelance) }] : []),
         ...(o.raisonPerte ? [{ label: 'Raison de la perte', valeur: o.raisonPerte }] : []),
         ...(o.preneur ? [{ label: 'Preneur', valeur: o.preneur }] : []),
@@ -291,4 +311,41 @@ const evenements = computed<TimelineItem[]>(() =>
     icon: e.titre.startsWith('Statut') || e.titre.startsWith('Opportunité publiée') ? 'i-lucide-flag' : 'i-lucide-activity'
   }))
 )
+
+// Récupérer la session utilisateur actuelle
+const { data: session } = await useFetch('/api/auth/session')
+
+const chargementPositionnement = ref(false)
+
+// Vérifie si le membre connecté est déjà positionné sur cette opportunité
+const estPositionne = computed(() => {
+  if (!opportunite.value || !session.value?.user?.id) return false
+  return opportunite.value.positionnements.some(
+    p => p.membreId === session.value.user.id && p.etatCode !== 'retire'
+  )
+})
+
+async function sePositionner() {
+  chargementPositionnement.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/positionnement`, {
+      method: 'POST'
+    })
+    await refreshNuxtData()
+  } finally {
+    chargementPositionnement.value = false
+  }
+}
+
+async function seDesister() {
+  chargementPositionnement.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/positionnement`, {
+      method: 'DELETE'
+    })
+    await refreshNuxtData()
+  } finally {
+    chargementPositionnement.value = false
+  }
+}
 </script>
