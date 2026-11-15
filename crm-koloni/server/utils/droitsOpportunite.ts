@@ -2,14 +2,14 @@ import type { H3Event } from 'h3'
 import { Role } from '#shared/types/utilisateur'
 import { exigerSession } from './auth'
 
-export type ActionOpportunite =
-  | 'qualifier'
-  | 'sePositionner'
-  | 'choisirProfils'
-  | 'changerStatut'
-  | 'cloturer'
-  | 'ajouterNote'
-  | 'gererContacts'
+export type ActionOpportunite
+  = | 'qualifier'
+    | 'sePositionner'
+    | 'choisirProfils'
+    | 'changerStatut'
+    | 'cloturer'
+    | 'ajouterNote'
+    | 'gererContacts'
 
 export type ActionsAutoriseesOpportunite = Record<ActionOpportunite, boolean>
 
@@ -104,4 +104,7 @@ export const exigerActionOpportunite = async (
   if (!actionsAutorisees[action]) {
     throw createError({ statusCode: 403, statusMessage: 'Action non autorisée sur cette opportunité' })
   }
+
+  // Renvoyée pour que la route connaisse l'auteur de l'écriture sans relire la session
+  return session
 }
