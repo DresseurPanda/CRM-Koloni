@@ -1,5 +1,5 @@
 <!--
-  MenuApplication — en-tête de l'application : titre, navigation, utilisateur connecté et thème
+  MenuApplication — en-tête de l'application : titre, navigation, utilisateur connecté, thème et déconnexion
   Sur mobile, la navigation s'ouvre dans un panneau latéral à gauche.
   L'entrée « Comptes » n'apparaît que pour un administrateur.
   Aucune prop : l'utilisateur est lu via useAuth()
@@ -20,6 +20,18 @@
     <template #right>
       <InfoUtilisateur v-if="isAuthenticated" />
       <UColorModeButton />
+      <UTooltip
+        v-if="isAuthenticated"
+        text="Se déconnecter"
+      >
+        <UButton
+          icon="i-lucide-log-out"
+          color="neutral"
+          variant="ghost"
+          aria-label="Se déconnecter"
+          @click="seDeconnecter"
+        />
+      </UTooltip>
     </template>
     <!-- Panneau latéral affiché sur mobile -->
     <template #body>
@@ -37,7 +49,13 @@
 <script lang="ts" setup>
 import type { NavigationMenuItem } from '@nuxt/ui'
 
-const { isAuthenticated, isAdmin } = useAuth()
+const { isAuthenticated, isAdmin, logout } = useAuth()
+
+// Ferme la session puis renvoie à la page de connexion
+async function seDeconnecter() {
+  await logout()
+  await navigateTo('/connexion/login', { replace: true })
+}
 
 const items = computed<NavigationMenuItem[]>(() => [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
