@@ -62,8 +62,8 @@ export default defineNuxtConfig({
       user: 'koloni_app',
       password: ''
     },
+    // Cookie de session de nuxt-auth-utils, chiffré avec une clé dérivée de NUXT_APP_SECRET
     session: {
-      password: process.env.NUXT_SESSION_PASSWORD || '',
       cookie: {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'

@@ -14,8 +14,8 @@
     "@iconify-json/lucide": "~1.2.155",
     "@nuxt/ui": "~4.12.0",
     "nuxt": "~4.6.4",
-    "nuxt-auth-utils": "~0.5.34",
-    "postgres": "~3.4.9",
+    "nuxt-auth-utils": "~0.6.2",
+    "postgres": "~4.1.1",
     "zod": "~4.6.7"
   },
   "devDependencies": {

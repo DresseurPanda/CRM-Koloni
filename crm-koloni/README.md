@@ -18,7 +18,7 @@ Créer le fichier d'environnement local à partir de l'exemple :
 cp .env.example .env
 ```
 
-Renseigner `NUXT_SESSION_PASSWORD` avec une chaîne aléatoire d'au moins 32 caractères, par exemple :
+Renseigner `NUXT_APP_SECRET` avec une chaîne aléatoire d'au moins 32 caractères, par exemple :
 
 ```bash
 openssl rand -hex 32
