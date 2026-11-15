@@ -4,8 +4,11 @@
       icon="i-lucide-shield"
       :title="titre"
     >
-      <div class="flex max-w-xl flex-col gap-6">
-        <UFormField label="Compte">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3 mb-6">
+        <UFormField
+          label="Compte"
+          class="max-w-xl w-full"
+        >
           <USelect
             v-model="idSelectionne"
             :items="comptesDisponibles"
@@ -14,6 +17,15 @@
           />
         </UFormField>
 
+        <UButton
+          label="Ajouter un membre"
+          icon="i-lucide-user-plus"
+          to="/comptes/nouveau"
+          class="justify-center"
+        />
+      </div>
+
+      <div class="flex max-w-xl flex-col gap-6">
         <template v-if="compteSelectionne">
           <UAlert
             v-if="estMonCompte"
