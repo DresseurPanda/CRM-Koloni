@@ -24,14 +24,32 @@
             Signalée le {{ formaterDate(opportunite.dateSignal) }} par {{ opportunite.apporteur }}
           </p>
         </div>
-        <UBadge
-          :color="STATUTS_OPPORTUNITE[opportunite.statut]?.couleur"
-          variant="solid"
-          size="lg"
-        >
-          {{ opportunite.statut }}
-        </UBadge>
+        <div class="flex items-center gap-2">
+          <UButton
+            v-if="opportunite.actionsAutorisees.qualifier"
+            label="Qualifier"
+            icon="i-lucide-check"
+            :loading="qualificationEnCours"
+            @click="confirmationQualificationOuverte = true"
+          />
+          <UBadge
+            :color="STATUTS_OPPORTUNITE[opportunite.statut]?.couleur"
+            variant="solid"
+            size="lg"
+          >
+            {{ opportunite.statut }}
+          </UBadge>
+        </div>
       </header>
+
+      <FenetreConfirmation
+        v-model:open="confirmationQualificationOuverte"
+        title="Qualifier l'opportunité"
+        description="Elle passera de Signal à Matching et les membres pourront s'y positionner. Cette validation ne pourra pas être annulée."
+        confirm-label="Qualifier"
+        color="primary"
+        @confirmer="qualifier"
+      />
 
       <div class="space-y-5">
         <!-- Résumé et conditions : une liste de champs chacune (voir resume et conditions) -->
@@ -207,10 +225,29 @@ import type { TimelineItem } from '@nuxt/ui'
 
 const route = useRoute()
 
-const { data: opportunite } = await useFetch<OpportuniteDetail | null>(
+const { data: opportunite, refresh } = await useFetch<OpportuniteDetail | null>(
   () => `/api/opportunites/${route.params.id}`,
   { default: () => null }
 )
+
+const toast = useToast()
+const confirmationQualificationOuverte = ref(false)
+const qualificationEnCours = ref(false)
+
+// Qualification confirmée : la fiche est rechargée pour afficher le nouveau statut, le qualificateur et le fil
+async function qualifier() {
+  qualificationEnCours.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/qualification`, { method: 'PATCH' })
+    await refresh()
+    toast.add({ title: 'Opportunité qualifiée', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Qualification impossible', description: message, color: 'error' })
+  } finally {
+    qualificationEnCours.value = false
+  }
+}
 
 // Style des messages affichés quand une section est vide (« Aucune note. »…)
 const CLASSE_MESSAGE_VIDE = 'text-sm text-muted'
