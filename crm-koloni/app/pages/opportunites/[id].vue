@@ -32,6 +32,14 @@
             :loading="qualificationEnCours"
             @click="confirmationQualificationOuverte = true"
           />
+          <UButton
+            v-if="opportunite.actionsAutorisees.changerStatut"
+            label="Changer le statut"
+            icon="i-lucide-flag"
+            color="neutral"
+            variant="outline"
+            @click="changementStatutOuvert = true"
+          />
           <UBadge
             :color="STATUTS_OPPORTUNITE[opportunite.statut]?.couleur"
             variant="solid"
@@ -49,6 +57,13 @@
         confirm-label="Qualifier"
         color="primary"
         @confirmer="qualifier"
+      />
+
+      <!-- Statut enregistré : la fiche est rechargée (badge, champs de relance ou de perte, fil) -->
+      <FenetreChangementStatut
+        v-model:open="changementStatutOuvert"
+        :opportunite="opportunite"
+        @modifie="refresh"
       />
 
       <div class="space-y-5">
@@ -233,6 +248,7 @@ const { data: opportunite, refresh } = await useFetch<OpportuniteDetail | null>(
 const toast = useToast()
 const confirmationQualificationOuverte = ref(false)
 const qualificationEnCours = ref(false)
+const changementStatutOuvert = ref(false)
 
 // Qualification confirmée : la fiche est rechargée pour afficher le nouveau statut, le qualificateur et le fil
 async function qualifier() {
