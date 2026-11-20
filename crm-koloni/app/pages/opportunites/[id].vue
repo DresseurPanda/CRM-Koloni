@@ -66,6 +66,21 @@
         @modifie="refresh"
       />
 
+      <!-- Contact rattaché ou retiré : la fiche est rechargée (carte des contacts, fil) -->
+      <FenetreAjoutContact
+        v-model:open="ajoutContactOuvert"
+        :opportunite="opportunite"
+        @modifie="refresh"
+      />
+
+      <FenetreConfirmation
+        v-model:open="retraitContactOuvert"
+        title="Retirer le contact"
+        :description="`Retirer ${contactARetirer?.prenom} ${contactARetirer?.nom} des contacts de cette opportunité ? Le contact lui-même n'est pas supprimé.`"
+        confirm-label="Retirer"
+        @confirmer="retirerContact"
+      />
+
       <div class="space-y-5">
         <!-- Résumé et conditions : une liste de champs chacune (voir resume et conditions) -->
         <CarteTitree
@@ -126,28 +141,52 @@
           icon="i-lucide-contact"
           title="Contacts clients"
         >
+          <template
+            v-if="opportunite.actionsAutorisees.gererContacts"
+            #actions
+          >
+            <UButton
+              label="Ajouter"
+              icon="i-lucide-plus"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              @click="ajoutContactOuvert = true"
+            />
+          </template>
           <ul
             v-if="opportunite.contacts.length"
             class="divide-y divide-default"
           >
-            <!-- Un contact par ligne : nom et lien vers sa fiche, poste et entreprise, moyens de contact -->
+            <!-- Un contact par ligne : nom et lien vers sa fiche, poste et entreprise, moyens de contact, bouton de retrait -->
             <li
               v-for="contact in opportunite.contacts"
               :key="contact.id"
-              class="py-2 first:pt-0 last:pb-0"
+              class="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
             >
-              <ULink
-                :to="`/contacts/${contact.id}`"
-                class="font-medium"
-              >
-                {{ contact.prenom }} {{ contact.nom }}
-              </ULink>
-              <p class="text-sm text-muted">
-                {{ [contact.role, contact.entreprise].filter(Boolean).join(' — ') }}
-              </p>
-              <p class="text-sm text-toned">
-                {{ [contact.mail, contact.telephone].filter(Boolean).join(' · ') }}
-              </p>
+              <div>
+                <ULink
+                  :to="`/contacts/${contact.id}`"
+                  class="font-medium"
+                >
+                  {{ contact.prenom }} {{ contact.nom }}
+                </ULink>
+                <p class="text-sm text-muted">
+                  {{ [contact.role, contact.entreprise].filter(Boolean).join(' — ') }}
+                </p>
+                <p class="text-sm text-toned">
+                  {{ [contact.mail, contact.telephone].filter(Boolean).join(' · ') }}
+                </p>
+              </div>
+              <UButton
+                v-if="opportunite.actionsAutorisees.gererContacts"
+                icon="i-lucide-trash-2"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                :aria-label="`Retirer ${contact.prenom} ${contact.nom}`"
+                @click="demanderRetraitContact(contact)"
+              />
             </li>
           </ul>
           <p
@@ -262,6 +301,32 @@ async function qualifier() {
     toast.add({ title: 'Qualification impossible', description: message, color: 'error' })
   } finally {
     qualificationEnCours.value = false
+  }
+}
+
+type ContactOpportunite = OpportuniteDetail['contacts'][number]
+
+const ajoutContactOuvert = ref(false)
+const retraitContactOuvert = ref(false)
+const contactARetirer = ref<ContactOpportunite>()
+
+// Clic sur la corbeille d'un contact : retenu pour la question de la fenêtre de confirmation
+function demanderRetraitContact(contact: ContactOpportunite) {
+  contactARetirer.value = contact
+  retraitContactOuvert.value = true
+}
+
+// Retrait confirmé : la fiche est rechargée (carte des contacts et fil)
+async function retirerContact() {
+  const contact = contactARetirer.value
+  if (!contact) return
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/contacts/${contact.id}`, { method: 'DELETE' })
+    await refresh()
+    toast.add({ title: 'Contact retiré', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Retrait impossible', description: message, color: 'error' })
   }
 }
 
