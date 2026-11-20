@@ -24,6 +24,7 @@ interface LigneOpportunite {
   moteur_id: string | null
   saisi_par: string | null
   moteur: string | null
+  preneur_membre_id: string | null
   preneur: string | null
   tjm_annonce: string | null
   tjm_client: string | null
@@ -84,6 +85,7 @@ export default defineEventHandler(async (event) => {
           AND p.membre_id = ${session.user.id}
           AND p.etat <> 'retire'
       ) AS positionne,
+      o.preneur_membre_id::text,
       COALESCE(pm.prenom || ' ' || pm.nom, pe.prenom || ' ' || pe.nom) AS preneur,
       o.tjm_annonce::text, o.tjm_client::text, o.tjm_preneur::text, o.duree_annoncee_mois::text, o.nombre_jours,
       o.charge, o.ville, o.mode, o.timing, o.mode_candidature, o.mode_candidature_precision,
@@ -114,6 +116,7 @@ export default defineEventHandler(async (event) => {
     membreId: session.user.id,
     apporteurId: o.apporteur_id,
     moteurId: o.moteur_id,
+    preneurMembreId: o.preneur_membre_id,
     modeCandidature: o.mode_candidature,
     statut: o.statut,
     qualifiee: o.qualifiee_par_id !== null,

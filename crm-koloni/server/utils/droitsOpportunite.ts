@@ -18,6 +18,7 @@ interface ContexteDroitsOpportunite {
   membreId: string
   apporteurId: string
   moteurId: string | null
+  preneurMembreId: string | null
   modeCandidature: string | null
   statut: string
   qualifiee: boolean
@@ -27,6 +28,7 @@ interface ContexteDroitsOpportunite {
 interface LigneDroitsOpportunite {
   apporteur_id: string
   moteur_id: string | null
+  preneur_membre_id: string | null
   mode_candidature: string | null
   statut: string
   qualifiee: boolean
@@ -38,6 +40,7 @@ export const calculerActionsAutoriseesOpportunite = ({
   membreId,
   apporteurId,
   moteurId,
+  preneurMembreId,
   modeCandidature,
   statut,
   qualifiee,
@@ -46,6 +49,7 @@ export const calculerActionsAutoriseesOpportunite = ({
   const administrateur = role === Role.admin
   const apporteur = membreId === apporteurId
   const moteur = membreId === moteurId
+  const preneur = membreId === preneurMembreId
   const membreAutoriseAChangerStatut = administrateur
     || apporteur
     || moteur
@@ -58,7 +62,7 @@ export const calculerActionsAutoriseesOpportunite = ({
     changerStatut: membreAutoriseAChangerStatut,
     cloturer: membreAutoriseAChangerStatut,
     ajouterNote: true,
-    gererContacts: true
+    gererContacts: administrateur || apporteur || moteur || preneur
   }
 }
 
@@ -72,6 +76,7 @@ export const exigerActionOpportunite = async (
     SELECT
       o.apporteur_id::text,
       o.moteur_id::text,
+      o.preneur_membre_id::text,
       o.mode_candidature,
       o.statut,
       (o.qualifiee_par_id IS NOT NULL) AS qualifiee,
@@ -95,6 +100,7 @@ export const exigerActionOpportunite = async (
     membreId: session.user.id,
     apporteurId: opportunite.apporteur_id,
     moteurId: opportunite.moteur_id,
+    preneurMembreId: opportunite.preneur_membre_id,
     modeCandidature: opportunite.mode_candidature,
     statut: opportunite.statut,
     qualifiee: opportunite.qualifiee,
