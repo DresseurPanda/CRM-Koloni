@@ -3,8 +3,8 @@
 ## _CRM interne — Gestion de la relation client_
 
 **Projet KOLONI**
-Version 0.3 — Document de travail
-Document de référence : Recueil de besoins, version 0.4
+Version 0.4 — Document de travail
+Document de référence : Recueil de besoins, version 0.5
 
 ---
 
