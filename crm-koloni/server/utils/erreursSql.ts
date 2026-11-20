@@ -15,6 +15,8 @@ const MESSAGES: Record<string, string> = {
   uq_technologie_nom_minuscule: 'Cette technologie existe déjà',
   uq_entreprise_cliente_nom_minuscule: 'Cette entreprise existe déjà',
   uq_positionnement_membre_opportunite: 'Ce membre est déjà positionné sur cette opportunité',
+  opportunite_contact_pkey: 'Ce contact est déjà rattaché à cette opportunité',
+  opportunite_contact_contact_id_fkey: 'Contact introuvable',
   chk_opp_raison_perte_obligatoire: 'La raison de la perte est obligatoire',
   chk_opp_date_relance_obligatoire: 'La date de relance est obligatoire pour une opportunité en pause',
   chk_opp_signe_complet: 'Le preneur, son TJM et le nombre de jours sont obligatoires pour une opportunité signée',
