@@ -82,8 +82,13 @@ Affiche le nom complet et le rôle (« Administrateur » / « Membre ») de l'ut
 
 Slot par défaut : contenu de la carte.
 
+Slot `actions` (optionnel) : boutons alignés à droite de l'en-tête.
+
 ```vue
 <CarteTitree icon="i-lucide-briefcase" title="Opportunités en cours">
+  <template #actions>
+    <UButton label="Ajouter" icon="i-lucide-plus" size="sm" />
+  </template>
   <p>Contenu de la carte…</p>
 </CarteTitree>
 ```
