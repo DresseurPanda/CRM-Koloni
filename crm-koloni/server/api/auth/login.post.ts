@@ -21,7 +21,7 @@ const schema = z.object({
 const HASH_FICTIF = '$scrypt$n=16384,r=8,p=1$DL6Gl8JLEOmEo4pE79bxPQ$0zrAQZZdzQt1ZL+Bqryu7929gh8UXWYWeJQT2MAMaejWLxoxTDApIk6PxjbBYzqVvs4G4vALyzWjcna6a7q3Qg'
 
 export default defineEventHandler(async (event) => {
-  const { mail, password } = await readValidatedBody(event, schema.parse)
+  const { mail, password } = await lireCorps(event, schema)
   const sql = useDb(event)
 
   const [membre] = await sql<LigneMembre[]>`

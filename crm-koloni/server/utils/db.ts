@@ -26,3 +26,16 @@ export const useDb = (event: H3Event) => {
   }
   return sql
 }
+
+/**
+ * Exécute une écriture dans une transaction dont l'auteur est le membre connecté
+ *
+ * Les triggers de la base lisent l'auteur dans app.current_membre_id pour remplir le journal et
+ * refusent l'écriture s'il manque. `set_config(..., true)` le limite à la transaction : jamais
+ * de SET de session avec un pool, l'identifiant d'un membre passerait à la requête suivante.
+ */
+export const enTransaction = <T>(event: H3Event, membreId: string, action: (tx: postgres.TransactionSql) => Promise<T>) =>
+  useDb(event).begin(async (tx) => {
+    await tx`SELECT set_config('app.current_membre_id', ${membreId}, true)`
+    return action(tx)
+  }) as Promise<T>

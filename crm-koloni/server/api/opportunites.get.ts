@@ -16,28 +16,12 @@ export default defineEventHandler(async (event) => {
   await exigerSession(event)
   const sql = useDb(event)
 
+  // opportunite_resume réunit déjà les technologies (la principale d'abord), le client final et l'apporteur
   const lignes = await sql<LigneOpportunite[]>`
-    SELECT
-      o.id::text,
-      o.titre,
-      o.statut,
-      ARRAY(
-        SELECT t.nom
-        FROM opportunite_technologie ot
-        JOIN technologie t ON t.id = ot.technologie_id
-        WHERE ot.opportunite_id = o.id
-        ORDER BY ot.est_principale DESC, t.nom
-      ) AS technologies,
-      o.ville,
-      o.mode,
-      ec.nom AS client_final,
-      m.prenom || ' ' || left(m.nom, 1) || '.' AS apporteur,
-      o.temperature,
-      to_char(o.date_signal, 'YYYY-MM-DD') AS date_signal
-    FROM opportunite o
-    JOIN membre m ON m.id = o.apporteur_id
-    LEFT JOIN entreprise_cliente ec ON ec.id = o.client_final_id
-    ORDER BY o.date_signal DESC, o.id DESC
+    SELECT id::text, titre, statut, technologies, ville, mode, client_final, apporteur, temperature,
+           to_char(date_signal, 'YYYY-MM-DD') AS date_signal
+    FROM opportunite_resume
+    ORDER BY opportunite_resume.date_signal DESC, opportunite_resume.id DESC
   `
 
   return lignes.map(l => ({

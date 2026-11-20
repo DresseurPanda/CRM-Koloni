@@ -14,10 +14,9 @@ export default defineEventHandler(async (event) => {
   const sql = useDb(event)
 
   const lignes = await sql<LigneContact[]>`
-    SELECT c.id::text, c.nom, c.prenom, c.role, e.nom AS entreprise, c.mail, c.telephone
-    FROM contact c
-    LEFT JOIN entreprise_cliente e ON e.id = c.entreprise_cliente_id
-    ORDER BY c.nom, c.prenom
+    SELECT id::text, nom, prenom, role, entreprise, mail, telephone
+    FROM contact_resume
+    ORDER BY nom, prenom
   `
 
   return lignes.map(l => ({

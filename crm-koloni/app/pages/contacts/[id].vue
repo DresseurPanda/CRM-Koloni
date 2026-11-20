@@ -11,10 +11,10 @@
     </div>
 
     <header class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-highlighted">
         Détail du contact
       </h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-muted">
         {{ contact ? `${contact.prenom} ${contact.nom}` : 'Chargement...' }}
       </p>
     </header>
@@ -68,7 +68,7 @@
             name="entreprise"
           >
             <USelect
-              v-model="form.entreprise"
+              v-model="form.entrepriseId"
               :items="entreprisesDisponibles"
               placeholder="Sélectionner une entreprise"
               class="w-full"
@@ -95,6 +95,19 @@
               class="w-full"
             />
           </UFormField>
+
+          <UFormField
+            label="Lien LinkedIn"
+            name="lienLinkedin"
+            description="Au moins un mail, un téléphone ou un lien LinkedIn"
+            class="col-span-full"
+          >
+            <UInput
+              v-model="form.lienLinkedin"
+              placeholder="https://www.linkedin.com/in/..."
+              class="w-full"
+            />
+          </UFormField>
         </section>
       </CarteTitree>
 
@@ -111,7 +124,7 @@
 
     <div
       v-else
-      class="text-gray-500 dark:text-gray-400 py-4"
+      class="text-muted py-4"
     >
       Contact introuvable.
     </div>
@@ -122,32 +135,25 @@
 const route = useRoute()
 const toast = useToast()
 
-interface Contact {
-  id: string
-  nom: string
-  prenom: string
-  role?: string
-  entreprise?: string
-  mail?: string
-  telephone?: string
-}
+// Un contact introuvable (404) laisse `contact` vide : la page affiche « Contact introuvable »
+const { data: contact, refresh } = await useFetch<Contact>(`/api/contacts/${route.params.id}`)
+const { data: entreprises } = await useFetch<EntrepriseCliente[]>('/api/entreprises', { default: () => [] })
 
-const contacts = ref<Contact[]>([
-  { id: '1', prenom: 'Marc', nom: 'Lefèvre', role: 'Commercial', entreprise: 'Capgemini', mail: 'marc.lefevre@example.com' },
-  { id: '2', prenom: 'Sophie', nom: 'Bernard', role: 'Responsable data', entreprise: 'EDF', mail: 'sophie.bernard@example.com', telephone: '06 00 00 00 01' }
+// Choix qui retire l'entreprise du contact
+const AUCUNE_ENTREPRISE = 'aucune'
+const entreprisesDisponibles = computed(() => [
+  { label: 'Aucune entreprise', value: AUCUNE_ENTREPRISE },
+  ...entreprises.value.map(e => ({ label: e.nom, value: e.id }))
 ])
-
-const entreprisesDisponibles = ['Capgemini', 'EDF', 'Orange', 'SNCF', 'Airbus']
-
-const contact = computed(() => contacts.value.find(c => c.id === route.params.id))
 
 const form = reactive({
   prenom: '',
   nom: '',
   role: '',
-  entreprise: undefined as string | undefined,
+  entrepriseId: AUCUNE_ENTREPRISE,
   mail: '',
-  telephone: ''
+  telephone: '',
+  lienLinkedin: ''
 })
 
 watch(contact, (val) => {
@@ -155,9 +161,10 @@ watch(contact, (val) => {
     form.prenom = val.prenom
     form.nom = val.nom
     form.role = val.role ?? ''
-    form.entreprise = val.entreprise
+    form.entrepriseId = val.entrepriseId ?? AUCUNE_ENTREPRISE
     form.mail = val.mail ?? ''
     form.telephone = val.telephone ?? ''
+    form.lienLinkedin = val.lienLinkedin ?? ''
   }
 }, { immediate: true })
 
@@ -168,11 +175,21 @@ async function enregistrer() {
     toast.add({ title: 'Le prénom et le nom sont obligatoires.', color: 'error' })
     return
   }
+  if (!form.mail.trim() && !form.telephone.trim() && !form.lienLinkedin.trim()) {
+    toast.add({ title: 'Renseignez au moins un mail, un téléphone ou un lien LinkedIn.', color: 'error' })
+    return
+  }
   enregistrement.value = true
   try {
+    await $fetch(`/api/contacts/${route.params.id}`, {
+      method: 'PATCH',
+      body: { ...form, entrepriseId: form.entrepriseId === AUCUNE_ENTREPRISE ? null : form.entrepriseId }
+    })
+    await refresh()
     toast.add({ title: 'Contact mis à jour avec succès', color: 'success' })
-  } catch {
-    toast.add({ title: 'Erreur lors de la mise à jour', color: 'error' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Mise à jour impossible', description: message, color: 'error' })
   } finally {
     enregistrement.value = false
   }

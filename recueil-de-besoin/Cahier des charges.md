@@ -3,7 +3,7 @@
 ## _CRM interne — Gestion de la relation client_
 
 **Projet KOLONI**
-Version 0.2 — Document de travail
+Version 0.3 — Document de travail
 Document de référence : Recueil de besoins, version 0.4
 
 ---
@@ -124,19 +124,19 @@ Chaque exigence est rattachée à un cas d'utilisation (UC) du recueil de besoin
 | --- | --- | --- | :---: | :---: |
 | EF-01 | Connexion par compte personnel. Aucune page ni donnée n'est consultable sans connexion. | UC1 | O | V0 |
 | EF-02 | Création de comptes, attribution du rôle et désactivation d'un membre sans effacer ses traces (positionnements, notes, actions). Réservé aux administrateurs. | UC16 | O | V0 |
-| EF-03 | Droits d'action par rôle, conformément au tableau du recueil de besoins (section 3.2). | UC1 | O | V0 |
+| EF-03 | Droits d'action par rôle, conformément au tableau du recueil de besoins (section 3.2). | UC1 | O | V0, V2 |
 
 ### 3.2 Opportunités
 
 | Réf. | Exigence | UC | Priorité | Release |
 | --- | --- | --- | :---: | :---: |
 | EF-04 | Publication d'une opportunité via un formulaire structuré (source, besoin, conditions, lieu, timing, candidature, diffusion), même incomplète. Elle démarre au statut Signal. Le client final, s'il est connu, est choisi parmi les entreprises clientes ; il ne bloque jamais la publication. | UC2 | O | V1 |
-| EF-05 | Qualification explicite Signal → Matching, posée par l'apporteur ou un administrateur. Le remplissage des champs ne suffit pas. Perdu et En pause restent possibles avant qualification. | UC3 | O | V1 |
+| EF-05 | Qualification explicite Signal → Matching, posée par l'apporteur ou un administrateur. Le remplissage des champs ne suffit pas. Perdu et En pause restent possibles avant qualification. | UC3 | O | V2 |
 | EF-06 | Consultation de la liste et du détail d'une opportunité (notes, historique, journal). Aucune information n'est masquée entre membres. | UC4 | O | V1 |
-| EF-07 | Changement de statut parmi les 7 statuts, transitions libres (saut, retour en arrière, réouverture), horodatage automatique. Raison obligatoire et non vide au passage en Perdu, date de relance obligatoire au passage en En pause. | UC9 | O | V1 |
-| EF-08 | Historique complet et daté des changements de statut, avec l'auteur de chaque changement, le motif de la perte et la date de relance le cas échéant, conservés après une réouverture. | UC11 | O | V1 |
+| EF-07 | Changement de statut parmi les 7 statuts, transitions libres (saut, retour en arrière, réouverture), horodatage automatique. Raison obligatoire et non vide au passage en Perdu, date de relance obligatoire au passage en En pause. | UC9 | O | V2 |
+| EF-08 | Historique complet et daté des changements de statut, avec l'auteur de chaque changement, le motif de la perte et la date de relance le cas échéant, conservés après une réouverture. | UC11 | O | V2 |
 | EF-09 | Aucune suppression physique d'une opportunité, y compris signée ou perdue. | — | O | V1 |
-| EF-10 | Niveau de diffusion (Libre, Réseau perso, Interne strict ; Réseau perso par défaut) et affichage de la date d'ouverture à l'extérieur du collectif, calculée à partir de la date de qualification et du délai laissé aux membres (2 jours calendaires à ce jour), sans objet en Interne strict ou tant que l'opportunité n'est pas qualifiée. Lien de l'annonce à l'extérieur facultatif. | UC2 | O | V1 |
+| EF-10 | Niveau de diffusion (Libre, Réseau perso, Interne strict ; Réseau perso par défaut) et affichage de la date d'ouverture à l'extérieur du collectif, calculée à partir de la date de qualification et du délai laissé aux membres (2 jours calendaires à ce jour), sans objet en Interne strict ou tant que l'opportunité n'est pas qualifiée. Lien de l'annonce à l'extérieur facultatif. | UC2 | O | V1, V2 |
 | EF-11 | Clôture d'une opportunité signée : preneur, TJM preneur, nombre de jours, date de clôture. | UC10 | O | V2 |
 | EF-12 | Recherche et filtres : technologie ou famille de technologies, statut, ville, mode, client final, société du contact, date du signal. | UC5 | O | V3 |
 | EF-13 | Vues dédiées : opportunités signées, opportunités perdues avec raison de la perte, opportunités en pause dont la date de relance est atteinte. | UC5 | O | V3 |
@@ -155,7 +155,7 @@ Chaque exigence est rattachée à un cas d'utilisation (UC) du recueil de besoin
 
 | Réf. | Exigence | UC | Priorité | Release |
 | --- | --- | --- | :---: | :---: |
-| EF-19 | Gestion des contacts liés à une opportunité et des entreprises clientes. Un contact peut être lié à plusieurs opportunités. Tout membre peut les créer et les modifier. Un contact exige au moins un mail, un téléphone ou un lien LinkedIn. Une entreprise, une technologie ou un lien LinkedIn de contact ne peut pas être saisi deux fois, sans tenir compte des majuscules ni des espaces en début et fin. | UC8 | O | V1 |
+| EF-19 | Gestion des contacts liés à une opportunité et des entreprises clientes. Un contact peut être lié à plusieurs opportunités. Tout membre peut les créer et les modifier. Un contact exige au moins un mail, un téléphone ou un lien LinkedIn. Une entreprise, une technologie ou un lien LinkedIn de contact ne peut pas être saisi deux fois, sans tenir compte des majuscules ni des espaces en début et fin. | UC8 | O | V1, V2 |
 | EF-20 | Enregistrement d'un profil contacté hors collectif sous forme de fiche structurée, lié à une ou plusieurs opportunités, avec, pour chacune, le membre qui l'a sollicité, la date et l'issue de la sollicitation. | UC13 | O | V3 |
 | EF-21 | Consultation de la base des profils contactés hors collectif, dans une liste unique des consultants avec les membres du collectif. Un profil extérieur relié à un compte membre n'apparaît qu'une fois. | UC14 | O | V3 |
 
@@ -209,10 +209,16 @@ Chaque membre est mobilisé 15 heures par semaine pendant 14 semaines. Le dével
 | Release | Durée | Contenu | Exigences |
 | --- | :---: | --- | --- |
 | **V0 — Socle** | 2 semaines | Modèle de données et scripts de migration, connexion, comptes, rôles et droits, jeu de données fictives, README de lancement. | EF-01 à EF-03 |
-| **V1 — Cycle de vie d'une opportunité** | 3 semaines | Publication, qualification, consultation, 7 statuts avec historique, contacts et entreprises, non-suppression, diffusion. | EF-04 à EF-10, EF-19 |
-| **V2 — Travail collectif** | 3 semaines | Positionnements, choix des profils présentés, notes, journal d'actions, clôture. | EF-11, EF-15 à EF-18 |
+| **V1 — Cycle de vie d'une opportunité** | 3 semaines | Publication, consultation, non-suppression, contacts et entreprises, diffusion. | EF-04, EF-06, EF-09, EF-10, EF-19 |
+| **V2 — Travail collectif** | 3 semaines | Reporté de la V1 : qualification, 7 statuts avec historique, modification d'une opportunité, rattachement des contacts. Puis positionnements, choix des profils présentés, notes, journal d'actions, clôture. | EF-03, EF-05, EF-07, EF-08, EF-10, EF-19 (reportées de la V1) ; EF-11, EF-15 à EF-18 |
 | **V3 — Recherche et base de profils** | 3 semaines | Recherche et filtres, vues dédiées, profils extérieurs, profil membre. | EF-12, EF-13, EF-20 à EF-22 |
 | **V4 — Finalisation** | 3 semaines | Vue en colonnes par statut (si le planning le permet), finitions responsive, documentation finale, recette avec le client, préparation de l'installation sur le VPS. | EF-14, ENF-01 à ENF-12 |
+
+**Bilan des releases terminées :**
+
+- **V0** : livrée. Les droits sur les actions d'une opportunité (EF-03) sont livrés avec la qualification, en V2.
+- **V1** : publication, consultation et non-suppression livrées ; fiches des contacts, des entreprises et des technologies, sans doublon. Reportés en V2 : la qualification (EF-05), le changement de statut et son historique (EF-07, EF-08), la modification d'une opportunité après sa publication, dont le niveau de diffusion (EF-10), et le rattachement des contacts à une opportunité (EF-19).
+- Livré en avance dans la base de données : les règles du journal d'actions, des positionnements et de la liste unique des consultants (V2 et V3).
 
 Le découpage est une proposition de l'équipe, à valider avec le client. Les compétences des membres (hors périmètre) ne seraient intégrées qu'en fin de V4, si le planning le permet.
 

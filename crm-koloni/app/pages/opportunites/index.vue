@@ -54,7 +54,7 @@
         <TableauOpportunites
           :opportunites="opportunitesPage"
           :get-badges="getOpportuniteBadges"
-          :titre-to="lienFicheOpportunite"
+          :titre-to="o => `/opportunites/${o.id}`"
         />
 
         <BarrePagination
@@ -70,7 +70,7 @@
 <script setup lang="ts">
 const ITEMS_PAR_PAGE = 20
 
-// Filtres de la maquette — chaque filtre extrait les valeurs d'une opportunité
+// Filtres de la liste — chaque filtre extrait les valeurs d'une opportunité
 const FILTRES = [
   { cle: 'clientFinal', label: 'Client', valeurs: (o: Opportunite) => [o.clientFinal] },
   { cle: 'ville', label: 'Ville', valeurs: (o: Opportunite) => [o.ville] },
@@ -80,91 +80,8 @@ const FILTRES = [
 
 type Filtres = Partial<Record<typeof FILTRES[number]['cle'] | 'dateSignal', string>>
 
-// Données de démonstration en attendant la connexion à la base de donnée
-const opportunites = ref<Opportunite[]>([
-  {
-    id: '1',
-    titre: 'EDF',
-    statut: 'En discussion',
-    technologies: ['Talend'],
-    ville: 'Toulouse',
-    mode: 'Hybride',
-    clientFinal: 'EDF',
-    apporteur: 'François A.',
-    temperature: 'Chaud',
-    dateSignal: '2026-09-23'
-  },
-  {
-    id: '2',
-    titre: 'Orange',
-    statut: 'Signé',
-    technologies: ['Power BI'],
-    ville: 'Lyon',
-    mode: 'Télétravail',
-    clientFinal: 'Orange',
-    apporteur: 'Alexia P.',
-    temperature: 'Tiède',
-    dateSignal: '2026-08-10'
-  },
-  {
-    id: '3',
-    titre: 'Migration entrepôt de données',
-    statut: 'Signal',
-    technologies: ['Snowflake', 'dbt'],
-    ville: 'Paris',
-    mode: 'Hybride',
-    clientFinal: 'SNCF',
-    apporteur: 'Alexia P.',
-    temperature: 'Chaud',
-    dateSignal: '2026-09-28'
-  },
-  {
-    id: '4',
-    titre: 'Refonte reporting commercial',
-    statut: 'Matching',
-    technologies: ['Power BI'],
-    ville: 'Bordeaux',
-    mode: 'Présentiel',
-    clientFinal: 'Décathlon',
-    apporteur: 'Damien T.',
-    temperature: 'Tiède',
-    dateSignal: '2026-09-15'
-  },
-  {
-    id: '5',
-    titre: 'Pipeline ETL temps réel',
-    statut: 'Proposé',
-    technologies: ['Python', 'Kafka'],
-    ville: 'Nantes',
-    mode: 'Télétravail',
-    clientFinal: 'Airbus',
-    apporteur: 'François A.',
-    temperature: 'Chaud',
-    dateSignal: '2026-09-02'
-  },
-  {
-    id: '6',
-    titre: 'Audit qualité des données',
-    statut: 'Perdu',
-    technologies: ['Talend'],
-    ville: 'Lyon',
-    mode: 'Hybride',
-    clientFinal: 'Michelin',
-    apporteur: 'Camille D.',
-    temperature: 'Tiède',
-    dateSignal: '2026-07-19'
-  },
-  {
-    id: '7',
-    titre: 'Data catalogue groupe',
-    statut: 'En pause',
-    technologies: ['Collibra'],
-    ville: 'Paris',
-    mode: 'Présentiel',
-    apporteur: 'Damien T.',
-    dateSignal: '2026-06-30'
-  }
-])
+// Opportunités lues en base de donnée, de la plus récente à la plus ancienne
+const { data: opportunites } = await useFetch<Opportunite[]>('/api/opportunites', { default: () => [] })
 
 const { getOpportuniteBadges } = useOpportuniteBadges(opportunites)
 
@@ -192,10 +109,6 @@ const opportunitesFiltrees = computed(() => {
 const opportunitesPage = computed(() =>
   opportunitesFiltrees.value.slice((page.value - 1) * ITEMS_PAR_PAGE, page.value * ITEMS_PAR_PAGE)
 )
-
-function lienFicheOpportunite(opportunite: Opportunite) {
-  return `/opportunites/${opportunite.id}`
-}
 
 function valider() {
   filtresAppliques.value = { ...filtres }

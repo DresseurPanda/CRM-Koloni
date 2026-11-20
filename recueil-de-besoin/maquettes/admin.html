@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KOLONI - Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f8f9fa; color: #333; }
+    header { background-color: #ffffff; border-bottom: 2px solid #e2e8f0; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .logo { font-weight: bold; font-size: 1.2rem; margin-right: 20px; }
+    nav { display: flex; gap: 15px; align-items: center; flex-grow: 1; }
+    nav a { text-decoration: none; color: #4a5568; padding: 6px 12px; border-radius: 4px; font-weight: 500; }
+    .user-nav { display: flex; align-items: center; gap: 15px; }
+    .user-nav a { text-decoration: none; color: #4a5568; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+    .user-nav a.active { color: #d97706; border-bottom: 2px solid #f59e0b; font-weight: bold; }
+    main { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+    .title { font-size: 1.2rem; font-weight: bold; margin-bottom: 30px; border-bottom: 2px solid #333; display: inline-block; padding-bottom: 2px; }
+    .admin-section { display: flex; flex-direction: column; gap: 25px; max-width: 600px; font-size: 1.1rem; }
+    .radio-group { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; margin-left: 120px; }
+    .radio-label { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .section-label { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">KOLONI</div>
+    <nav>
+      <a href="index.html">Dashboard</a>
+      <a href="opportunities.html">Opportunities</a>
+      <a href="clients.html">Clients</a>
+      <a href="contacts.html">Contacts</a>
+    </nav>
+    <div class="user-nav">
+      <a href="user.html">👤 User</a>
+      <a href="admin.html" class="active">⚙️ Admin</a>
+      <span>☀️</span>
+    </div>
+  </header>
+  <main>
+    <div class="title">Paramètre du compte : Nicolas D.</div>
+    <div class="admin-section">
+      <div>
+        <span class="section-label">Rôles :</span>
+        <div class="radio-group">
+          <label class="radio-label"><input type="radio" name="role" value="admin"> Administrateur</label>
+          <label class="radio-label"><input type="radio" name="role" value="membre" checked> Membre</label>
+        </div>
+      </div>
+      <div>
+        <span class="section-label">Etat du compte :</span>
+        <div class="radio-group">
+          <label class="radio-label"><input type="radio" name="etat" value="activer" checked> Activer</label>
+          <label class="radio-label"><input type="radio" name="etat" value="desactiver"> Désactiver</label>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

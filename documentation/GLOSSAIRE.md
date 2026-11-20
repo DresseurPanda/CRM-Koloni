@@ -262,6 +262,22 @@ n'est pas journalisée.
 
 ---
 
+## Vues de lecture
+
+Quatre vues donnent une ligne prête à lire, pour que l'application n'ait ni
+jointure ni sous-requête à écrire : elle sélectionne dans la vue et ajoute
+son tri (l'ordre d'une vue n'est pas garanti). Elles gardent les codes tels
+que stockés ; la traduction en libellés reste du côté de l'application.
+
+| Vue | Contenu |
+| --- | --- |
+| `opportunite_resume` | Une ligne par opportunité : technologies (la principale d'abord), client final, apporteur sous la forme « Prénom N. », statut, mode, température, date du signal, diffusion, lien d'annonce, date de qualification et date d'ouverture à l'extérieur. |
+| `contact_resume` | Une ligne par contact client, avec le nom de son entreprise. |
+| `profil_exterieur_resume` | Une ligne par profil extérieur : technologies par ordre alphabétique, date et issue de sa dernière sollicitation. |
+| `membre_resume` | Les comptes sans l'empreinte du mot de passe, que seule la connexion lit. |
+
+---
+
 ## Ce que ce script ne fait pas (volontairement)
 
 - Pas de table de suivi des migrations en base : la table `migrations`

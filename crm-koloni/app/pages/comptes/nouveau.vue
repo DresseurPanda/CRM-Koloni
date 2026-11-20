@@ -11,10 +11,10 @@
     </div>
 
     <header class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-highlighted">
         Ajouter un membre
       </h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-muted">
         Créez un compte pour un membre du collectif.
       </p>
     </header>

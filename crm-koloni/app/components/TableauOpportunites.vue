@@ -1,25 +1,27 @@
 <!--
-  TableauOpportunites — tableau d'opportunités réutilisable (liste principale + vues filtrées)
-  Encapsule UTable (TanStack Table) avec un système de colonnes de pastilles configurable.
+  TableauOpportunites — tableau d'opportunités (liste principale et vues filtrées), basé sur UTable
+  Colonnes, de gauche à droite :
+    barre colorée selon le statut, titre, pastilles (client final, ville),
+    apporteur, température, statut, date du signal
   Props :
-    opportunites — données à afficher
-    getBadges    — fonction qui retourne les BadgeItem d'une opportunité
-    columns      — sous-ensemble de clés OPPORTUNITE_BADGE_COLUMNS à afficher ; défaut = toutes
-    titreTo      — fonction qui retourne le lien du titre (optionnel)
+    opportunites — opportunités à afficher
+    getBadges    — renvoie les pastilles d'une opportunité (voir useOpportuniteBadges)
+    columns      — clés des colonnes de pastilles à afficher ('Client final', 'Ville') ; défaut : toutes
+    titreTo      — renvoie le lien du titre d'une opportunité (optionnel : titre sans lien si absent)
 -->
 <template>
   <UTable
     :data="opportunites"
-    :columns="tableColumns"
+    :columns="colonnesTableau"
     :ui="{
-      th: 'text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500 py-1',
+      th: 'text-[10px] uppercase tracking-wide text-dimmed py-1',
       td: 'py-2 align-middle'
     }"
   />
 </template>
 
 <script lang="ts" setup>
-import { h, resolveComponent } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
 
 const props = defineProps<{
   opportunites: Opportunite[]
@@ -28,130 +30,116 @@ const props = defineProps<{
   titreTo?: (o: Opportunite) => string
 }>()
 
-const STATUT_BAR: Record<StatutOpportunite, string> = {
-  'Signal': 'bg-gray-400',
-  'Matching': 'bg-info-500',
-  'Proposé': 'bg-warning-500',
-  'En discussion': 'bg-warning-500',
-  'Signé': 'bg-success-500',
-  'Perdu': 'bg-error-500',
-  'En pause': 'bg-neutral-400'
-}
+const UBadge = resolveComponent('UBadge')
+const UTooltip = resolveComponent('UTooltip')
+const NuxtLink = resolveComponent('NuxtLink')
 
-const STATUT_COLOR: Record<StatutOpportunite, NuxtUiColor> = {
-  'Signal': 'neutral',
-  'Matching': 'info',
-  'Proposé': 'warning',
-  'En discussion': 'warning',
-  'Signé': 'success',
-  'Perdu': 'error',
-  'En pause': 'neutral'
-}
+// Couleurs des statuts (STATUTS_OPPORTUNITE) et des températures (COULEURS_TEMPERATURE) :
+// partagées avec la fiche de détail, dans app/utils/opportunites.ts
 
-const TEMPERATURE_COLOR: Record<Temperature, NuxtUiColor> = {
-  Chaud: 'orange',
-  Tiède: 'info'
-}
+const CLASSE_TITRE = 'font-medium text-sm text-highlighted truncate'
 
-function badgeMap(o: Opportunite): Record<string, BadgeItem> {
-  return Object.fromEntries(props.getBadges(o).map(b => [b.tooltip ?? b.label, b]))
-}
-
-const visibleBadgeCols = computed(() =>
+// Colonnes de pastilles affichées, dans l'ordre de OPPORTUNITE_BADGE_COLUMNS
+const colonnesPastilles = computed(() =>
   props.columns
     ? OPPORTUNITE_BADGE_COLUMNS.filter(c => props.columns!.includes(c.key))
     : OPPORTUNITE_BADGE_COLUMNS
 )
 
-const tableColumns = computed(() => {
-  const UBadge = resolveComponent('UBadge')
-  const UTooltip = resolveComponent('UTooltip')
-  const NuxtLink = resolveComponent('NuxtLink')
+const colonnesTableau = computed<TableColumn<Opportunite>[]>(() => [
+  // Barre colorée selon le statut (colonne sans en-tête)
+  {
+    id: 'bar',
+    header: '',
+    meta: { class: { th: 'w-1 p-0', td: 'w-1 p-0 pr-2' } },
+    cell: ({ row }) => h('div', {
+      // Couleur du statut Signal si le statut venant de la base de donnée n'est pas reconnu
+      class: ['w-1 rounded-sm self-stretch', (STATUTS_OPPORTUNITE[row.original.statut] ?? STATUTS_OPPORTUNITE.Signal).barre],
+      style: 'min-height: 2rem'
+    })
+  },
 
-  return [
-    // Trait coloré (barre de statut gauche simulée par une colonne sans en-tête)
-    {
-      id: 'bar',
-      header: '',
-      meta: { class: { th: 'w-1 p-0', td: 'w-1 p-0 pr-2' } },
-      cell: ({ row }: { row: { original: Opportunite } }) =>
-        h('div', { class: ['w-1 rounded-sm self-stretch', STATUT_BAR[row.original.statut] ?? 'bg-gray-400'], style: 'min-height: 2rem' })
-    },
-
-    // Titre
-    {
-      accessorKey: 'titre',
-      header: 'Titre',
-      cell: ({ row }: { row: { original: Opportunite } }) => {
-        const o = row.original
-        const to = props.titreTo?.(o)
-        return to
-          ? h(NuxtLink, { to, class: 'font-medium text-sm text-gray-900 dark:text-white hover:underline truncate' }, () => o.titre)
-          : h('p', { class: 'font-medium text-sm text-gray-900 dark:text-white truncate' }, o.titre)
-      }
-    },
-
-    // Colonnes de pastilles (sous-ensemble selon la prop `columns`)
-    ...visibleBadgeCols.value.map(col => ({
-      id: col.key,
-      header: col.label,
-      meta: { class: { th: `${col.width} text-center`, td: `${col.width} text-center` } },
-      cell: ({ row }: { row: { original: Opportunite } }) => {
-        const badge = badgeMap(row.original)[col.key]
-        if (!badge) return null
-        const badgeEl = h(UBadge, {
-          color: badge.color,
-          leadingIcon: badge.icon,
-          trailingIcon: badge.trailingIcon,
-          variant: 'soft',
-          size: 'md'
-        }, () => badge.label)
-        const inner = badge.to ? h(NuxtLink, { to: badge.to }, () => badgeEl) : badgeEl
-        return h(UTooltip, { text: col.label }, () => inner)
-      }
-    })),
-
-    // Apporteur
-    {
-      accessorKey: 'apporteur',
-      header: 'Apporteur',
-      meta: { class: { th: 'w-32', td: 'w-32 text-sm' } }
-    },
-
-    // Température
-    {
-      id: 'temperature',
-      header: 'Température',
-      meta: { class: { th: 'w-28 text-center', td: 'w-28 text-center' } },
-      cell: ({ row }: { row: { original: Opportunite } }) => {
-        const t = row.original.temperature
-        return t ? h(UBadge, { color: TEMPERATURE_COLOR[t], variant: 'soft', size: 'md' }, () => t) : null
-      }
-    },
-
-    // Statut
-    {
-      id: 'statut',
-      header: 'Statut',
-      meta: { class: { th: 'w-28 text-center', td: 'w-28 text-center' } },
-      cell: ({ row }: { row: { original: Opportunite } }) => {
-        const o = row.original
-        return h(UBadge, {
-          color: STATUT_COLOR[o.statut],
-          variant: 'solid',
-          size: 'md'
-        }, () => o.statut)
-      }
-    },
-
-    // Date du signal (ISO AAAA-MM-JJ → JJ/MM/AAAA)
-    {
-      accessorKey: 'dateSignal',
-      header: 'Date signal',
-      meta: { class: { th: 'w-28 text-center', td: 'w-28 text-center text-sm' } },
-      cell: ({ row }: { row: { original: Opportunite } }) =>
-        row.original.dateSignal?.split('-').reverse().join('/') ?? ''
+  // Titre, cliquable si titreTo est fourni
+  {
+    accessorKey: 'titre',
+    header: 'Titre',
+    cell: ({ row }) => {
+      const to = props.titreTo?.(row.original)
+      return to
+        ? h(NuxtLink, { to, class: `${CLASSE_TITRE} hover:underline` }, () => row.original.titre)
+        : h('p', { class: CLASSE_TITRE }, row.original.titre)
     }
-  ]
-})
+  },
+
+  // Colonnes de pastilles : une colonne par entrée de OPPORTUNITE_BADGE_COLUMNS (Client final, Ville),
+  // dans l'ordre et la largeur qu'elle définit
+  ...colonnesPastilles.value.map((col): TableColumn<Opportunite> => ({
+    id: col.key,
+    header: col.label,
+    meta: { class: { th: `${col.width} text-center`, td: `${col.width} text-center` } },
+    cell: ({ row }) => {
+      // Parmi les pastilles de l'opportunité, celle de cette colonne est la seule dont le champ tooltip
+      // (« infobulle », jamais affiché ici : il sert à reconnaître le type de pastille) vaut la clé
+      // de la colonne (ex. 'Ville') ; cellule vide si l'opportunité n'en a pas
+      const badge = props.getBadges(row.original).find(b => b.tooltip === col.key)
+      if (!badge) return null
+      // Pastille : texte, couleur et icônes (avant / après le texte) fournis par getBadges
+      const pastille = h(UBadge, {
+        color: badge.color,
+        leadingIcon: badge.icon,
+        trailingIcon: badge.trailingIcon,
+        variant: 'soft',
+        size: 'md'
+      }, () => badge.label)
+      // Infobulle = nom de la colonne ; pastille cliquable si elle porte un lien (badge.to)
+      return h(UTooltip, { text: col.label }, () =>
+        badge.to ? h(NuxtLink, { to: badge.to }, () => pastille) : pastille
+      )
+    }
+  })),
+
+  // Apporteur : texte simple, affiché tel quel (ex. « Alexia P. »)
+  {
+    accessorKey: 'apporteur',
+    header: 'Apporteur',
+    meta: { class: { th: 'w-32', td: 'w-32 text-sm' } }
+  },
+
+  // Température : badge Chaud (rouge) ou Tiède (bleu) selon COULEURS_TEMPERATURE, avec l'infobulle
+  // « Température » ; cellule vide si la température n'est pas renseignée (champ facultatif)
+  {
+    id: 'temperature',
+    header: 'Température',
+    meta: { class: { th: 'w-28 text-center', td: 'w-28 text-center' } },
+    cell: ({ row }) => {
+      const t = row.original.temperature
+      if (!t) return null
+      return h(UTooltip, { text: 'Température' }, () =>
+        h(UBadge, { color: COULEURS_TEMPERATURE[t], variant: 'soft', size: 'md' }, () => t)
+      )
+    }
+  },
+
+  // Statut : badge plein, de la couleur définie dans STATUTS_OPPORTUNITE, avec l'infobulle « Statut »
+  {
+    id: 'statut',
+    header: 'Statut',
+    meta: { class: { th: 'w-28 text-center', td: 'w-28 text-center' } },
+    cell: ({ row }) => h(UTooltip, { text: 'Statut' }, () =>
+      h(UBadge, {
+        color: STATUTS_OPPORTUNITE[row.original.statut]?.couleur,
+        variant: 'solid',
+        size: 'md'
+      }, () => row.original.statut)
+    )
+  },
+
+  // Date du signal : AAAA-MM-JJ → JJ/MM/AAAA
+  {
+    accessorKey: 'dateSignal',
+    header: 'Date signal',
+    meta: { class: { th: 'w-28 text-center', td: 'w-28 text-center text-sm' } },
+    cell: ({ row }) => formaterDate(row.original.dateSignal)
+  }
+])
 </script>

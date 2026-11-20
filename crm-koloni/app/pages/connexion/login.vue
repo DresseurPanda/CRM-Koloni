@@ -10,19 +10,7 @@
       :submit="{ label: 'Se connecter' }"
       class="w-full max-w-sm"
       @submit="onSubmit"
-    >
-      <template #footer>
-        <p class="text-center text-sm text-muted">
-          Pas encore de compte ?
-          <ULink
-            to="/connexion/register"
-            class="font-medium text-primary"
-          >
-            Créer un compte
-          </ULink>
-        </p>
-      </template>
-    </UAuthForm>
+    />
   </div>
 </template>
 

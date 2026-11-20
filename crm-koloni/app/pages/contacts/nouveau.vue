@@ -2,19 +2,19 @@
   <UContainer class="py-8 max-w-2xl">
     <div class="mb-4">
       <UButton
-        label="Retour aux contacts"
+        :label="opportuniteId ? 'Retour à l\'opportunité' : 'Retour aux contacts'"
         icon="i-lucide-arrow-left"
         color="neutral"
         variant="ghost"
-        to="/contacts"
+        :to="pageRetour"
       />
     </div>
 
     <header class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-highlighted">
         Ajouter un contact
       </h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-muted">
         Renseignez les informations du nouveau contact client
       </p>
     </header>
@@ -69,7 +69,7 @@
             name="entreprise"
           >
             <USelect
-              v-model="form.entreprise"
+              v-model="form.entrepriseId"
               :items="entreprisesDisponibles"
               placeholder="Sélectionner une entreprise"
               class="w-full"
@@ -98,12 +98,25 @@
               class="w-full"
             />
           </UFormField>
+
+          <UFormField
+            label="Lien LinkedIn"
+            name="lienLinkedin"
+            description="Au moins un mail, un téléphone ou un lien LinkedIn"
+            class="col-span-full"
+          >
+            <UInput
+              v-model="form.lienLinkedin"
+              placeholder="https://www.linkedin.com/in/..."
+              class="w-full"
+            />
+          </UFormField>
         </section>
       </CarteTitree>
 
       <footer class="flex items-center justify-end gap-3 pt-4">
         <UButton
-          to="/contacts"
+          :to="pageRetour"
           variant="ghost"
           color="neutral"
         >
@@ -122,18 +135,28 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
-const entreprisesDisponibles = ['Capgemini', 'EDF', 'Orange', 'SNCF', 'Airbus']
+// Arrivée depuis une fiche opportunité (?opportunite=12) : retour sur cette fiche, pour y rattacher le contact
+const opportuniteId = computed(() => {
+  const valeur = route.query.opportunite
+  return typeof valeur === 'string' && /^\d+$/.test(valeur) ? valeur : undefined
+})
+const pageRetour = computed(() => (opportuniteId.value ? `/opportunites/${opportuniteId.value}` : '/contacts'))
+
+const { data: entreprises } = await useFetch<EntrepriseCliente[]>('/api/entreprises', { default: () => [] })
+const entreprisesDisponibles = computed(() => entreprises.value.map(e => ({ label: e.nom, value: e.id })))
 
 const form = reactive({
   prenom: '',
   nom: '',
   role: '',
-  entreprise: undefined as string | undefined,
+  entrepriseId: undefined as string | undefined,
   mail: '',
-  telephone: ''
+  telephone: '',
+  lienLinkedin: ''
 })
 
 const creation = ref(false)
@@ -143,13 +166,23 @@ async function creerContact() {
     toast.add({ title: 'Le prénom et le nom sont obligatoires.', color: 'error' })
     return
   }
+  if (!form.mail.trim() && !form.telephone.trim() && !form.lienLinkedin.trim()) {
+    toast.add({ title: 'Renseignez au moins un mail, un téléphone ou un lien LinkedIn.', color: 'error' })
+    return
+  }
 
   creation.value = true
   try {
-    toast.add({ title: 'Contact créé avec succès', color: 'success' })
-    router.push('/contacts')
-  } catch {
-    toast.add({ title: 'Erreur lors de la création', color: 'error' })
+    await $fetch('/api/contacts', { method: 'POST', body: form })
+    toast.add({
+      title: 'Contact créé avec succès',
+      description: opportuniteId.value ? 'Vous pouvez maintenant le rattacher avec « Ajouter ».' : undefined,
+      color: 'success'
+    })
+    await router.push(pageRetour.value)
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Création impossible', description: message, color: 'error' })
   } finally {
     creation.value = false
   }

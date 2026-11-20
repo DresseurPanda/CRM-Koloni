@@ -65,25 +65,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
-// Contact — personne rattachée à une entreprise cliente (cahier des charges §3.3)
-interface Contact {
-  id: string
-  nom: string
-  prenom: string
-  role?: string // fonction chez le client (colonne « Poste »)
-  entreprise?: string // facultative : le contact peut être saisi avant que son entreprise soit connue
-  mail?: string
-  telephone?: string
-}
-
-// Liste alimentée lorsque la base de donnée sera connectée
-const contacts = ref<Contact[]>([
-  { id: '1', prenom: 'Marc', nom: 'Lefèvre', role: 'Commercial', entreprise: 'Capgemini', mail: 'marc.lefevre@example.com' },
-  { id: '2', prenom: 'Sophie', nom: 'Bernard', role: 'Responsable data', entreprise: 'EDF', mail: 'sophie.bernard@example.com', telephone: '06 00 00 00 01' },
-  { id: '3', prenom: 'Julien', nom: 'Moreau', role: 'DSI', entreprise: 'Orange', telephone: '06 00 00 00 02' },
-  { id: '4', prenom: 'Claire', nom: 'Petit', role: 'Commerciale', entreprise: 'Capgemini', mail: 'claire.petit@example.com' },
-  { id: '5', prenom: 'Thomas', nom: 'Roux', mail: 'thomas.roux@example.com' }
-])
+const { data: contacts } = await useFetch<Contact[]>('/api/contacts', { default: () => [] })
 
 const columns: TableColumn<Contact>[] = [
   { id: 'nomComplet', header: 'Nom et Prénom', accessorFn: c => `${c.prenom} ${c.nom}` },

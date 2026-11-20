@@ -62,8 +62,8 @@ export default defineNuxtConfig({
       user: 'koloni_app',
       password: ''
     },
+    // Cookie de session de nuxt-auth-utils, chiffré avec une clé dérivée de NUXT_APP_SECRET
     session: {
-      password: process.env.NUXT_SESSION_PASSWORD || '',
       cookie: {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production'
@@ -72,6 +72,14 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2025-01-15',
+
+  vite: {
+    // Dépendances pré-compilées dès le démarrage : sinon Vite les découvre au premier chargement
+    // d'une page qui les utilise (zod sur la connexion, les devtools) et recharge la page
+    optimizeDeps: {
+      include: ['zod', '@vue/devtools-core']
+    }
+  },
 
   typescript: {
     tsConfig: {

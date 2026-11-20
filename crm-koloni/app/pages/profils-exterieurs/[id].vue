@@ -11,10 +11,10 @@
     </div>
 
     <header class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 class="text-2xl font-bold text-highlighted">
         Détail du profil extérieur
       </h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      <p class="mt-1 text-sm text-muted">
         {{ profil ? `${profil.prenom} ${profil.nom}` : 'Chargement...' }}
       </p>
     </header>
@@ -162,7 +162,7 @@
 
     <div
       v-else
-      class="text-gray-500 dark:text-gray-400 py-4"
+      class="text-muted py-4"
     >
       Profil extérieur introuvable.
     </div>

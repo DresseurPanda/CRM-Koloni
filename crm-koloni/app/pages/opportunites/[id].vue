@@ -1,5 +1,9 @@
+<!--
+  Fiche d'une opportunité, en lecture : résumé, conditions, technologies, contacts,
+  positionnements, notes et fil (historique des statuts et journal d'actions réunis)
+-->
 <template>
-  <UContainer class="py-8 max-w-3xl">
+  <UContainer class="py-8 max-w-4xl">
     <div class="mb-4">
       <UButton
         label="Retour aux opportunités"
@@ -13,71 +17,235 @@
     <template v-if="opportunite">
       <header class="mb-8 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 class="text-2xl font-bold text-highlighted">
             {{ opportunite.titre }}
           </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Signalée le {{ formaterDate(opportunite.dateSignal) }}
+          <p class="mt-1 text-sm text-muted">
+            Signalée le {{ formaterDate(opportunite.dateSignal) }} par {{ opportunite.apporteur }}
           </p>
         </div>
-
-        <UBadge
-          color="info"
-          variant="soft"
-        >
-          {{ opportunite.statut }}
-        </UBadge>
+        <div class="flex items-center gap-2">
+          <UButton
+            v-if="opportunite.actionsAutorisees.qualifier"
+            label="Qualifier"
+            icon="i-lucide-check"
+            :loading="qualificationEnCours"
+            @click="confirmationQualificationOuverte = true"
+          />
+          <UButton
+            v-if="opportunite.actionsAutorisees.changerStatut"
+            label="Changer le statut"
+            icon="i-lucide-flag"
+            color="neutral"
+            variant="outline"
+            @click="changementStatutOuvert = true"
+          />
+          <UBadge
+            :color="STATUTS_OPPORTUNITE[opportunite.statut]?.couleur"
+            variant="solid"
+            size="lg"
+          >
+            {{ opportunite.statut }}
+          </UBadge>
+        </div>
       </header>
 
+      <FenetreConfirmation
+        v-model:open="confirmationQualificationOuverte"
+        title="Qualifier l'opportunité"
+        description="Elle passera de Signal à Matching et les membres pourront s'y positionner. Cette validation ne pourra pas être annulée."
+        confirm-label="Qualifier"
+        color="primary"
+        @confirmer="qualifier"
+      />
+
+      <!-- Statut enregistré : la fiche est rechargée (badge, champs de relance ou de perte, fil) -->
+      <FenetreChangementStatut
+        v-model:open="changementStatutOuvert"
+        :opportunite="opportunite"
+        @modifie="refresh"
+      />
+
+      <!-- Contact rattaché ou retiré : la fiche est rechargée (carte des contacts, fil) -->
+      <FenetreAjoutContact
+        v-model:open="ajoutContactOuvert"
+        :opportunite="opportunite"
+        @modifie="refresh"
+      />
+
+      <FenetreConfirmation
+        v-model:open="retraitContactOuvert"
+        title="Retirer le contact"
+        :description="`Retirer ${contactARetirer?.prenom} ${contactARetirer?.nom} des contacts de cette opportunité ? Le contact lui-même n'est pas supprimé.`"
+        confirm-label="Retirer"
+        @confirmer="retirerContact"
+      />
+
       <div class="space-y-5">
+        <!-- Résumé et conditions : une liste de champs chacune (voir resume et conditions) -->
         <CarteTitree
-          icon="i-lucide-briefcase"
-          title="Informations de l'opportunité"
+          v-for="bloc in blocs"
+          :key="bloc.titre"
+          :icon="bloc.icone"
+          :title="bloc.titre"
         >
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div
-              v-for="champ in champs"
+              v-for="champ in bloc.champs"
               :key="champ.label"
             >
-              <dt class="text-sm text-gray-500 dark:text-gray-400">
+              <dt class="text-sm text-muted">
                 {{ champ.label }}
               </dt>
-              <dd class="font-medium text-gray-900 dark:text-white">
-                {{ champ.valeur || champ.defaut }}
+              <dd class="font-medium text-highlighted wrap-break-word">
+                <ULink
+                  v-if="champ.lien && champ.valeur"
+                  :to="champ.valeur"
+                  target="_blank"
+                >
+                  {{ champ.valeur }}
+                </ULink>
+                <template v-else>
+                  {{ champ.valeur || 'Non renseigné' }}
+                </template>
               </dd>
             </div>
           </dl>
         </CarteTitree>
 
         <CarteTitree
-          icon="i-lucide-notebook-pen"
-          title="Notes"
+          icon="i-lucide-code"
+          title="Technologies"
         >
+          <!-- La technologie principale arrive en premier (tri de la route), en badge plein -->
           <div
-            v-if="notes?.length"
-            class="space-y-4"
+            v-if="opportunite.technologies.length"
+            class="flex flex-wrap gap-2"
           >
-            <article
-              v-for="note in notes"
-              :key="note.id"
-              class="border-b border-gray-200 pb-4 last:border-0 last:pb-0 dark:border-gray-800"
-            >
-              <p class="whitespace-pre-wrap text-gray-900 dark:text-white">
-                {{ note.contenu }}
-              </p>
-              <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {{ note.auteur }} · {{ formaterDateHeure(note.dateRedaction) }}
-              </p>
-            </article>
+            <UBadge
+              v-for="techno in opportunite.technologies"
+              :key="techno.nom"
+              :variant="techno.principale ? 'solid' : 'soft'"
+              :label="techno.principale ? `${techno.nom} (principale)` : techno.nom"
+            />
           </div>
           <p
             v-else
-            class="text-sm text-gray-500 dark:text-gray-400"
+            :class="CLASSE_MESSAGE_VIDE"
           >
-            Aucune note pour le moment.
+            Aucune technologie renseignée.
+          </p>
+        </CarteTitree>
+
+        <CarteTitree
+          icon="i-lucide-contact"
+          title="Contacts clients"
+        >
+          <template
+            v-if="opportunite.actionsAutorisees.gererContacts"
+            #actions
+          >
+            <UButton
+              label="Ajouter"
+              icon="i-lucide-plus"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              @click="ajoutContactOuvert = true"
+            />
+          </template>
+          <ul
+            v-if="opportunite.contacts.length"
+            class="divide-y divide-default"
+          >
+            <!-- Un contact par ligne : nom et lien vers sa fiche, poste et entreprise, moyens de contact, bouton de retrait -->
+            <li
+              v-for="contact in opportunite.contacts"
+              :key="contact.id"
+              class="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
+            >
+              <div>
+                <ULink
+                  :to="`/contacts/${contact.id}`"
+                  class="font-medium"
+                >
+                  {{ contact.prenom }} {{ contact.nom }}
+                </ULink>
+                <p class="text-sm text-muted">
+                  {{ [contact.role, contact.entreprise].filter(Boolean).join(' — ') }}
+                </p>
+                <p class="text-sm text-toned">
+                  {{ [contact.mail, contact.telephone].filter(Boolean).join(' · ') }}
+                </p>
+              </div>
+              <UButton
+                v-if="opportunite.actionsAutorisees.gererContacts"
+                icon="i-lucide-trash-2"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                :aria-label="`Retirer ${contact.prenom} ${contact.nom}`"
+                @click="demanderRetraitContact(contact)"
+              />
+            </li>
+          </ul>
+          <p
+            v-else
+            :class="CLASSE_MESSAGE_VIDE"
+          >
+            Aucun contact rattaché.
+          </p>
+        </CarteTitree>
+
+        <CarteTitree
+          icon="i-lucide-users"
+          title="Positionnements"
+        >
+          <!-- Lecture seule pour l'instant : se positionner et se désister arrivent avec le lot D -->
+          <ListePersonnes
+            :personnes="personnesPositionnees"
+            label="Membres positionnés"
+            :categories="ETATS_POSITIONNEMENT"
+            :categories-masquees="['Écarté', 'Retiré']"
+          />
+          <p
+            v-if="!opportunite.positionnements.length"
+            :class="CLASSE_MESSAGE_VIDE"
+          >
+            Aucun membre positionné.
+          </p>
+        </CarteTitree>
+
+        <CarteTitree
+          icon="i-lucide-notebook-pen"
+          title="Notes"
+        >
+          <ul
+            v-if="opportunite.notes.length"
+            class="space-y-4"
+          >
+            <!-- Une note par ligne, de la plus récente à la plus ancienne : auteur, date, contenu -->
+            <li
+              v-for="note in opportunite.notes"
+              :key="note.id"
+            >
+              <p class="text-sm text-muted">
+                {{ note.auteur }}, le {{ formaterDate(note.date) }}
+              </p>
+              <p class="whitespace-pre-line text-default">
+                {{ note.contenu }}
+              </p>
+            </li>
+          </ul>
+          <p
+            v-else
+            :class="CLASSE_MESSAGE_VIDE"
+          >
+            Aucune note.
           </p>
 
           <UForm
+            v-if="opportunite.actionsAutorisees.ajouterNote"
             :state="formNote"
             class="mt-6 space-y-3"
             @submit="ajouterNote"
@@ -107,6 +275,23 @@
             </div>
           </UForm>
         </CarteTitree>
+
+        <CarteTitree
+          icon="i-lucide-history"
+          title="Fil de l'opportunité"
+        >
+          <UTimeline
+            v-if="evenements.length"
+            :items="evenements"
+            size="xs"
+          />
+          <p
+            v-else
+            :class="CLASSE_MESSAGE_VIDE"
+          >
+            Aucun événement.
+          </p>
+        </CarteTitree>
       </div>
     </template>
 
@@ -121,40 +306,39 @@
 </template>
 
 <script setup lang="ts">
-interface Opportunite {
-  id: string
-  titre: string
-  statut: string
-  apporteur: string
-  dateSignal?: string // date ISO AAAA-MM-JJ
-  clientFinal?: string
-  ville?: string
-  mode?: string
-  temperature?: string
-  technologies?: string[]
-}
+import type { TimelineItem } from '@nuxt/ui'
 
 const route = useRoute()
-const toast = useToast()
-const formNote = reactive({ contenu: '' })
-const envoiNote = ref(false)
 
-interface NoteOpportunite {
-  id: string
-  contenu: string
-  dateRedaction: string
-  auteur: string
-}
-
-const { data: opportunite } = await useFetch<Opportunite | null>(
+const { data: opportunite, refresh } = await useFetch<OpportuniteDetail | null>(
   () => `/api/opportunites/${route.params.id}`,
   { default: () => null }
 )
-const { data: notes, refresh: rechargerNotes } = await useFetch<NoteOpportunite[]>(
-  () => `/api/opportunites/${route.params.id}/notes`,
-  { default: () => [] }
-)
 
+const toast = useToast()
+const confirmationQualificationOuverte = ref(false)
+const qualificationEnCours = ref(false)
+const changementStatutOuvert = ref(false)
+
+// Qualification confirmée : la fiche est rechargée pour afficher le nouveau statut, le qualificateur et le fil
+async function qualifier() {
+  qualificationEnCours.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/qualification`, { method: 'PATCH' })
+    await refresh()
+    toast.add({ title: 'Opportunité qualifiée', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Qualification impossible', description: message, color: 'error' })
+  } finally {
+    qualificationEnCours.value = false
+  }
+}
+
+const formNote = reactive({ contenu: '' })
+const envoiNote = ref(false)
+
+// Note publiée : la fiche est rechargée pour l'afficher en tête de la carte des notes
 async function ajouterNote() {
   const contenu = formNote.contenu.trim()
   if (!contenu || envoiNote.value) return
@@ -166,37 +350,119 @@ async function ajouterNote() {
       body: { contenu }
     })
     formNote.contenu = ''
-    await rechargerNotes()
+    await refresh()
     toast.add({ title: 'Note publiée', color: 'success' })
   } catch (error) {
-    toast.add({
-      title: 'Publication impossible',
-      description: (error as { data?: { statusMessage?: string } }).data?.statusMessage,
-      color: 'error'
-    })
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Publication impossible', description: message, color: 'error' })
   } finally {
     envoiNote.value = false
   }
 }
 
-function formaterDate(iso?: string) {
-  return iso ? iso.split('-').reverse().join('/') : 'date inconnue'
+type ContactOpportunite = OpportuniteDetail['contacts'][number]
+
+const ajoutContactOuvert = ref(false)
+const retraitContactOuvert = ref(false)
+const contactARetirer = ref<ContactOpportunite>()
+
+// Clic sur la corbeille d'un contact : retenu pour la question de la fenêtre de confirmation
+function demanderRetraitContact(contact: ContactOpportunite) {
+  contactARetirer.value = contact
+  retraitContactOuvert.value = true
 }
 
-function formaterDateHeure(iso: string) {
-  return new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso))
+// Retrait confirmé : la fiche est rechargée (carte des contacts et fil)
+async function retirerContact() {
+  const contact = contactARetirer.value
+  if (!contact) return
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/contacts/${contact.id}`, { method: 'DELETE' })
+    await refresh()
+    toast.add({ title: 'Contact retiré', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Retrait impossible', description: message, color: 'error' })
+  }
 }
 
-const champs = computed(() => {
+// Style des messages affichés quand une section est vide (« Aucune note. »…)
+const CLASSE_MESSAGE_VIDE = 'text-sm text-muted'
+
+// Montant en euros, ou rien si non renseigné
+const euros = (montant?: number) => (montant === undefined ? undefined : `${montant} €`)
+
+// Blocs de champs affichés en grille : le résumé, puis les conditions de la mission
+const blocs = computed(() => {
   const o = opportunite.value
   if (!o) return []
   return [
-    { label: 'Client final', valeur: o.clientFinal, defaut: 'Non renseigné' },
-    { label: 'Apporteur', valeur: o.apporteur, defaut: 'Non renseigné' },
-    { label: 'Ville', valeur: o.ville, defaut: 'Non renseignée' },
-    { label: 'Mode', valeur: o.mode, defaut: 'Non renseigné' },
-    { label: 'Température', valeur: o.temperature, defaut: 'Non renseignée' },
-    { label: 'Technologies', valeur: o.technologies?.join(', '), defaut: 'Non renseignées' }
+    {
+      titre: 'Résumé',
+      icone: 'i-lucide-briefcase',
+      champs: [
+        { label: 'Source', valeur: o.source },
+        { label: 'Type de mission', valeur: o.typeMission },
+        { label: 'Niveau recherché', valeur: o.niveauRecherche },
+        { label: 'Température', valeur: o.temperature },
+        // Client final inconnu : on montre son secteur et sa taille à la place
+        o.clientFinal
+          ? { label: 'Client final', valeur: o.clientFinal }
+          : { label: 'Client final (inconnu)', valeur: [o.clientFinalSecteur, o.clientFinalTaille].filter(Boolean).join(', ') },
+        { label: 'Apporteur', valeur: o.apporteur },
+        ...(o.saisiPar ? [{ label: 'Saisie par', valeur: o.saisiPar }] : []),
+        { label: 'Moteur', valeur: o.moteur },
+        {
+          label: 'Qualification',
+          valeur: o.qualifieePar ? `${o.qualifieePar}, le ${formaterDate(o.dateQualification)}` : 'Pas encore qualifiée'
+        },
+        { label: 'Ouverture à l\'extérieur', valeur: o.dateOuvertureExterieur ? `À partir du ${formaterDate(o.dateOuvertureExterieur)}` : 'Sans objet' },
+        // Champs propres à certains statuts : relance, perte, signature
+        ...(o.dateRelance ? [{ label: 'Date de relance', valeur: formaterDate(o.dateRelance) }] : []),
+        ...(o.raisonPerte ? [{ label: 'Raison de la perte', valeur: o.raisonPerte }] : []),
+        ...(o.preneur ? [{ label: 'Preneur', valeur: o.preneur }] : []),
+        ...(o.tjmPreneur !== undefined ? [{ label: 'TJM preneur', valeur: euros(o.tjmPreneur) }] : []),
+        ...(o.nombreJours !== undefined ? [{ label: 'Nombre de jours', valeur: String(o.nombreJours) }] : []),
+        ...(o.dateCloture ? [{ label: 'Date de clôture', valeur: formaterDate(o.dateCloture) }] : [])
+      ]
+    },
+    {
+      titre: 'Conditions de la mission',
+      icone: 'i-lucide-list-checks',
+      champs: [
+        { label: 'TJM annoncé', valeur: euros(o.tjmAnnonce) },
+        { label: 'TJM client', valeur: euros(o.tjmClient) },
+        { label: 'Durée annoncée', valeur: o.dureeAnnonceeMois === undefined ? undefined : `${o.dureeAnnonceeMois} mois` },
+        { label: 'Charge', valeur: o.charge },
+        { label: 'Ville', valeur: o.ville },
+        { label: 'Mode de travail', valeur: o.mode },
+        { label: 'Timing', valeur: o.timing },
+        { label: 'Mode de candidature', valeur: [o.modeCandidature, o.modeCandidaturePrecision].filter(Boolean).join(' — ') },
+        { label: 'Niveau de diffusion', valeur: o.niveauDiffusion },
+        { label: 'Lien de l\'annonce extérieure', valeur: o.lienAnnonceExterieure, lien: true }
+      ]
+    }
   ]
 })
+
+// Positionnements au format de ListePersonnes : l'état sert de catégorie
+const personnesPositionnees = computed<PersonneListee[]>(() =>
+  (opportunite.value?.positionnements ?? []).map(p => ({
+    id: p.membreId,
+    nom: p.nom,
+    prenom: p.prenom,
+    mail: p.mail,
+    categorie: p.etat
+  }))
+)
+
+// Fil au format de UTimeline : un changement de statut se distingue par son icône
+const evenements = computed<TimelineItem[]>(() =>
+  (opportunite.value?.fil ?? []).map(e => ({
+    date: `${formaterDate(e.date)} — ${e.auteur}`,
+    title: e.titre,
+    description: e.detail,
+    icon: e.titre.startsWith('Statut') || e.titre.startsWith('Opportunité publiée') ? 'i-lucide-flag' : 'i-lucide-activity'
+  }))
+)
 </script>

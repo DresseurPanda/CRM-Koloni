@@ -11,9 +11,8 @@ export default defineNuxtRouteMiddleware((to) => {
   // Toute autre page exige d'être connecté
   if (!isAuthenticated.value) return navigateTo('/connexion/login', { replace: true })
 
-  // Gestion des comptes et création de compte réservées aux administrateurs
-  const reserveAdmin = to.path.startsWith('/comptes') || to.path === '/connexion/register'
-  if (reserveAdmin && role.value !== Role.admin) {
+  // Gestion et création des comptes réservées aux administrateurs
+  if (to.path.startsWith('/comptes') && role.value !== Role.admin) {
     return navigateTo('/', { replace: true })
   }
 })
