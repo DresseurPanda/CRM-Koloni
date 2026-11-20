@@ -3,7 +3,7 @@
 ## _Gestion de la Relation Client_
 
 **Projet KOLONI — CRM interne**
-Version 0.4 — Document de travail
+Version 0.5 — Document de travail
 
 ---
 
@@ -157,7 +157,8 @@ _La lecture est ouverte à tous : la distinction ci-dessous ne porte que sur les
 - Valider la qualification d'une opportunité dont il est l'apporteur.
 - Ajouter une note à une opportunité.
 - Enregistrer un profil contacté hors collectif.
-- Gérer les contacts d'une opportunité.
+- Créer et modifier les contacts et les entreprises clientes.
+- Rattacher un contact à une opportunité dont il est l'apporteur, le moteur ou le preneur, ou l'en retirer.
 - Gérer son propre profil (coordonnées, disponibilité, notes).
 
 #### Administrateur
@@ -179,12 +180,15 @@ _La lecture est ouverte à tous : la distinction ci-dessous ne porte que sur les
 | Faire évoluer le statut d'une opportunité | ✓ | ✓ | ✓ | ✓ | — |
 | Clôturer une opportunité signée | ✓ | ✓ | ✓ | ✓ | — |
 | Ajouter une note | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Gérer les contacts et les entreprises clientes | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Créer et modifier les contacts et les entreprises clientes | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Rattacher ou retirer un contact d'une opportunité ² | ✓ | ✓ | ✓ | — | — |
 | Enregistrer un profil contacté hors collectif | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Gérer son propre profil | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Gérer les comptes utilisateurs | ✓ | — | — | — | — |
 
 ¹ Membre positionné sur l'opportunité concernée, lorsque le mode de candidature est « contact direct recruteur ».
+
+² Le preneur de l'opportunité, une fois celle-ci signée, a aussi ce droit.
 
 _La lecture est ouverte à tous, sans restriction : seules les colonnes d'action ci-dessus distinguent les profils._
 
@@ -425,7 +429,7 @@ Freelance du collectif Koloni, susceptible de se positionner sur une opportunit�
 | UC5 | Rechercher et filtrer les opportunités | Membre, Administrateur |
 | UC6 | Se positionner sur une opportunité | Membre, Administrateur |
 | UC7 | Ajouter une note à une opportunité | Membre, Administrateur |
-| UC8 | Gérer les contacts d'une opportunité | Membre, Administrateur |
+| UC8 | Gérer les contacts d'une opportunité | Apporteur, moteur, preneur, Administrateur |
 | UC9 | Faire évoluer le statut d'une opportunité | Apporteur, moteur, membre positionné (contact direct recruteur), Administrateur |
 | UC10 | Clôturer une opportunité signée | Apporteur, moteur, membre positionné (contact direct recruteur), Administrateur |
 | UC11 | Consulter l'historique des statuts d'une opportunité | Membre, Administrateur |
@@ -469,7 +473,7 @@ Freelance du collectif Koloni, susceptible de se positionner sur une opportunit�
 
 ### UC8 — Gérer les contacts d'une opportunité
 >
-> En tant que membre, je veux rattacher un contact et son entreprise à une opportunité, afin que le collectif sache à qui s'adresser et retrouve ce même contact lors d'une prochaine opportunité.
+> En tant qu'apporteur, moteur, preneur ou administrateur, je veux rattacher un contact et son entreprise à une opportunité, afin que le collectif sache à qui s'adresser et retrouve ce même contact lors d'une prochaine opportunité.
 
 ### UC9 — Faire évoluer le statut d'une opportunité
 >

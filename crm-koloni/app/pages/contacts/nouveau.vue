@@ -2,11 +2,11 @@
   <UContainer class="py-8 max-w-2xl">
     <div class="mb-4">
       <UButton
-        label="Retour aux contacts"
+        :label="opportuniteId ? 'Retour à l\'opportunité' : 'Retour aux contacts'"
         icon="i-lucide-arrow-left"
         color="neutral"
         variant="ghost"
-        to="/contacts"
+        :to="pageRetour"
       />
     </div>
 
@@ -116,7 +116,7 @@
 
       <footer class="flex items-center justify-end gap-3 pt-4">
         <UButton
-          to="/contacts"
+          :to="pageRetour"
           variant="ghost"
           color="neutral"
         >
@@ -135,8 +135,16 @@
 </template>
 
 <script setup lang="ts">
+const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+
+// Arrivée depuis une fiche opportunité (?opportunite=12) : retour sur cette fiche, pour y rattacher le contact
+const opportuniteId = computed(() => {
+  const valeur = route.query.opportunite
+  return typeof valeur === 'string' && /^\d+$/.test(valeur) ? valeur : undefined
+})
+const pageRetour = computed(() => (opportuniteId.value ? `/opportunites/${opportuniteId.value}` : '/contacts'))
 
 const { data: entreprises } = await useFetch<EntrepriseCliente[]>('/api/entreprises', { default: () => [] })
 const entreprisesDisponibles = computed(() => entreprises.value.map(e => ({ label: e.nom, value: e.id })))
@@ -166,8 +174,12 @@ async function creerContact() {
   creation.value = true
   try {
     await $fetch('/api/contacts', { method: 'POST', body: form })
-    toast.add({ title: 'Contact créé avec succès', color: 'success' })
-    await router.push('/contacts')
+    toast.add({
+      title: 'Contact créé avec succès',
+      description: opportuniteId.value ? 'Vous pouvez maintenant le rattacher avec « Ajouter ».' : undefined,
+      color: 'success'
+    })
+    await router.push(pageRetour.value)
   } catch (error) {
     const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
     toast.add({ title: 'Création impossible', description: message, color: 'error' })

@@ -24,14 +24,62 @@
             Signalée le {{ formaterDate(opportunite.dateSignal) }} par {{ opportunite.apporteur }}
           </p>
         </div>
-        <UBadge
-          :color="STATUTS_OPPORTUNITE[opportunite.statut]?.couleur"
-          variant="solid"
-          size="lg"
-        >
-          {{ opportunite.statut }}
-        </UBadge>
+        <div class="flex items-center gap-2">
+          <UButton
+            v-if="opportunite.actionsAutorisees.qualifier"
+            label="Qualifier"
+            icon="i-lucide-check"
+            :loading="qualificationEnCours"
+            @click="confirmationQualificationOuverte = true"
+          />
+          <UButton
+            v-if="opportunite.actionsAutorisees.changerStatut"
+            label="Changer le statut"
+            icon="i-lucide-flag"
+            color="neutral"
+            variant="outline"
+            @click="changementStatutOuvert = true"
+          />
+          <UBadge
+            :color="STATUTS_OPPORTUNITE[opportunite.statut]?.couleur"
+            variant="solid"
+            size="lg"
+          >
+            {{ opportunite.statut }}
+          </UBadge>
+        </div>
       </header>
+
+      <FenetreConfirmation
+        v-model:open="confirmationQualificationOuverte"
+        title="Qualifier l'opportunité"
+        description="Elle passera de Signal à Matching et les membres pourront s'y positionner. Cette validation ne pourra pas être annulée."
+        confirm-label="Qualifier"
+        color="primary"
+        @confirmer="qualifier"
+      />
+
+      <!-- Statut enregistré : la fiche est rechargée (badge, champs de relance ou de perte, fil) -->
+      <FenetreChangementStatut
+        v-model:open="changementStatutOuvert"
+        :opportunite="opportunite"
+        @modifie="refresh"
+      />
+
+      <!-- Contact rattaché ou retiré : la fiche est rechargée (carte des contacts, fil) -->
+      <FenetreAjoutContact
+        v-model:open="ajoutContactOuvert"
+        :opportunite="opportunite"
+        @modifie="refresh"
+      />
+
+      <FenetreConfirmation
+        v-model:open="retraitContactOuvert"
+        title="Retirer le contact"
+        :description="`Retirer ${contactARetirer?.prenom} ${contactARetirer?.nom} des contacts de cette opportunité ? Le contact lui-même n'est pas supprimé.`"
+        confirm-label="Retirer"
+        @confirmer="retirerContact"
+      />
 
       <div class="space-y-5">
         <!-- Résumé et conditions : une liste de champs chacune (voir resume et conditions) -->
@@ -93,28 +141,52 @@
           icon="i-lucide-contact"
           title="Contacts clients"
         >
+          <template
+            v-if="opportunite.actionsAutorisees.gererContacts"
+            #actions
+          >
+            <UButton
+              label="Ajouter"
+              icon="i-lucide-plus"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              @click="ajoutContactOuvert = true"
+            />
+          </template>
           <ul
             v-if="opportunite.contacts.length"
             class="divide-y divide-default"
           >
-            <!-- Un contact par ligne : nom et lien vers sa fiche, poste et entreprise, moyens de contact -->
+            <!-- Un contact par ligne : nom et lien vers sa fiche, poste et entreprise, moyens de contact, bouton de retrait -->
             <li
               v-for="contact in opportunite.contacts"
               :key="contact.id"
-              class="py-2 first:pt-0 last:pb-0"
+              class="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0"
             >
-              <ULink
-                :to="`/contacts/${contact.id}`"
-                class="font-medium"
-              >
-                {{ contact.prenom }} {{ contact.nom }}
-              </ULink>
-              <p class="text-sm text-muted">
-                {{ [contact.role, contact.entreprise].filter(Boolean).join(' — ') }}
-              </p>
-              <p class="text-sm text-toned">
-                {{ [contact.mail, contact.telephone].filter(Boolean).join(' · ') }}
-              </p>
+              <div>
+                <ULink
+                  :to="`/contacts/${contact.id}`"
+                  class="font-medium"
+                >
+                  {{ contact.prenom }} {{ contact.nom }}
+                </ULink>
+                <p class="text-sm text-muted">
+                  {{ [contact.role, contact.entreprise].filter(Boolean).join(' — ') }}
+                </p>
+                <p class="text-sm text-toned">
+                  {{ [contact.mail, contact.telephone].filter(Boolean).join(' · ') }}
+                </p>
+              </div>
+              <UButton
+                v-if="opportunite.actionsAutorisees.gererContacts"
+                icon="i-lucide-trash-2"
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                :aria-label="`Retirer ${contact.prenom} ${contact.nom}`"
+                @click="demanderRetraitContact(contact)"
+              />
             </li>
           </ul>
           <p
@@ -193,6 +265,37 @@
           >
             Aucune note.
           </p>
+
+          <UForm
+            v-if="opportunite.actionsAutorisees.ajouterNote"
+            :state="formNote"
+            class="mt-6 space-y-3"
+            @submit="ajouterNote"
+          >
+            <UFormField
+              label="Ajouter une note"
+              name="contenu"
+              required
+            >
+              <UTextarea
+                v-model="formNote.contenu"
+                :rows="4"
+                :maxlength="5000"
+                class="w-full"
+                placeholder="Partagez une information utile à tous…"
+              />
+            </UFormField>
+            <div class="flex justify-end">
+              <UButton
+                type="submit"
+                icon="i-lucide-send"
+                :loading="envoiNote"
+                :disabled="!formNote.contenu.trim()"
+              >
+                Publier la note
+              </UButton>
+            </div>
+          </UForm>
         </CarteTitree>
 
         <CarteTitree
@@ -229,10 +332,81 @@ import type { TimelineItem } from '@nuxt/ui'
 
 const route = useRoute()
 
-const { data: opportunite } = await useFetch<OpportuniteDetail | null>(
+const { data: opportunite, refresh } = await useFetch<OpportuniteDetail | null>(
   () => `/api/opportunites/${route.params.id}`,
   { default: () => null }
 )
+
+const toast = useToast()
+const confirmationQualificationOuverte = ref(false)
+const qualificationEnCours = ref(false)
+const changementStatutOuvert = ref(false)
+
+// Qualification confirmée : la fiche est rechargée pour afficher le nouveau statut, le qualificateur et le fil
+async function qualifier() {
+  qualificationEnCours.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/qualification`, { method: 'PATCH' })
+    await refresh()
+    toast.add({ title: 'Opportunité qualifiée', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Qualification impossible', description: message, color: 'error' })
+  } finally {
+    qualificationEnCours.value = false
+  }
+}
+
+const formNote = reactive({ contenu: '' })
+const envoiNote = ref(false)
+
+// Note publiée : la fiche est rechargée pour l'afficher en tête de la carte des notes
+async function ajouterNote() {
+  const contenu = formNote.contenu.trim()
+  if (!contenu || envoiNote.value) return
+
+  envoiNote.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/notes`, {
+      method: 'POST',
+      body: { contenu }
+    })
+    formNote.contenu = ''
+    await refresh()
+    toast.add({ title: 'Note publiée', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Publication impossible', description: message, color: 'error' })
+  } finally {
+    envoiNote.value = false
+  }
+}
+
+type ContactOpportunite = OpportuniteDetail['contacts'][number]
+
+const ajoutContactOuvert = ref(false)
+const retraitContactOuvert = ref(false)
+const contactARetirer = ref<ContactOpportunite>()
+
+// Clic sur la corbeille d'un contact : retenu pour la question de la fenêtre de confirmation
+function demanderRetraitContact(contact: ContactOpportunite) {
+  contactARetirer.value = contact
+  retraitContactOuvert.value = true
+}
+
+// Retrait confirmé : la fiche est rechargée (carte des contacts et fil)
+async function retirerContact() {
+  const contact = contactARetirer.value
+  if (!contact) return
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/contacts/${contact.id}`, { method: 'DELETE' })
+    await refresh()
+    toast.add({ title: 'Contact retiré', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Retrait impossible', description: message, color: 'error' })
+  }
+}
 
 // Style des messages affichés quand une section est vide (« Aucune note. »…)
 const CLASSE_MESSAGE_VIDE = 'text-sm text-muted'
