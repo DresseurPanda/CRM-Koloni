@@ -243,6 +243,37 @@
           >
             Aucune note.
           </p>
+
+          <UForm
+            v-if="opportunite.actionsAutorisees.ajouterNote"
+            :state="formNote"
+            class="mt-6 space-y-3"
+            @submit="ajouterNote"
+          >
+            <UFormField
+              label="Ajouter une note"
+              name="contenu"
+              required
+            >
+              <UTextarea
+                v-model="formNote.contenu"
+                :rows="4"
+                :maxlength="5000"
+                class="w-full"
+                placeholder="Partagez une information utile à tous…"
+              />
+            </UFormField>
+            <div class="flex justify-end">
+              <UButton
+                type="submit"
+                icon="i-lucide-send"
+                :loading="envoiNote"
+                :disabled="!formNote.contenu.trim()"
+              >
+                Publier la note
+              </UButton>
+            </div>
+          </UForm>
         </CarteTitree>
 
         <CarteTitree
@@ -301,6 +332,31 @@ async function qualifier() {
     toast.add({ title: 'Qualification impossible', description: message, color: 'error' })
   } finally {
     qualificationEnCours.value = false
+  }
+}
+
+const formNote = reactive({ contenu: '' })
+const envoiNote = ref(false)
+
+// Note publiée : la fiche est rechargée pour l'afficher en tête de la carte des notes
+async function ajouterNote() {
+  const contenu = formNote.contenu.trim()
+  if (!contenu || envoiNote.value) return
+
+  envoiNote.value = true
+  try {
+    await $fetch(`/api/opportunites/${route.params.id}/notes`, {
+      method: 'POST',
+      body: { contenu }
+    })
+    formNote.contenu = ''
+    await refresh()
+    toast.add({ title: 'Note publiée', color: 'success' })
+  } catch (error) {
+    const message = (error as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.add({ title: 'Publication impossible', description: message, color: 'error' })
+  } finally {
+    envoiNote.value = false
   }
 }
 

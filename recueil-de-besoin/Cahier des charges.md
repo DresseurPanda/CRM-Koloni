@@ -155,7 +155,7 @@ Chaque exigence est rattachée à un cas d'utilisation (UC) du recueil de besoin
 
 | Réf. | Exigence | UC | Priorité | Release |
 | --- | --- | --- | :---: | :---: |
-| EF-19 | Gestion des contacts liés à une opportunité et des entreprises clientes. Un contact peut être lié à plusieurs opportunités. Tout membre peut les créer et les modifier. Un contact exige au moins un mail, un téléphone ou un lien LinkedIn. Une entreprise, une technologie ou un lien LinkedIn de contact ne peut pas être saisi deux fois, sans tenir compte des majuscules ni des espaces en début et fin. | UC8 | O | V1, V2 |
+| EF-19 | Gestion des contacts liés à une opportunité et des entreprises clientes. Un contact peut être lié à plusieurs opportunités. Tout membre peut les créer et les modifier. Seuls l'administrateur, l'apporteur, le moteur et le preneur de l'opportunité peuvent y rattacher un contact ou l'en retirer. Un contact exige au moins un mail, un téléphone ou un lien LinkedIn. Une entreprise, une technologie ou un lien LinkedIn de contact ne peut pas être saisi deux fois, sans tenir compte des majuscules ni des espaces en début et fin. | UC8 | O | V1, V2 |
 | EF-20 | Enregistrement d'un profil contacté hors collectif sous forme de fiche structurée, lié à une ou plusieurs opportunités, avec, pour chacune, le membre qui l'a sollicité, la date et l'issue de la sollicitation. | UC13 | O | V3 |
 | EF-21 | Consultation de la base des profils contactés hors collectif, dans une liste unique des consultants avec les membres du collectif. Un profil extérieur relié à un compte membre n'apparaît qu'une fois. | UC14 | O | V3 |
 
