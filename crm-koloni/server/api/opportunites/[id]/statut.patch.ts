@@ -59,9 +59,9 @@ export default defineEventHandler(async (event) => {
         UPDATE opportunite
         SET statut = ${donnees.statut},
             raison_perte = ${donnees.statut === 'perdu' ? donnees.raisonPerte ?? null : null},
-            date_relance = ${donnees.statut === 'en_pause' ? donnees.dateRelance ?? null : null},
+            date_relance = ${donnees.statut === 'en_pause' ? donnees.dateRelance ?? null : null}::date,
             date_cloture = CASE
-              WHEN ${donnees.statut} IN ('signe', 'perdu') THEN CURRENT_DATE
+              WHEN ${donnees.statut}::text IN ('signe', 'perdu') THEN CURRENT_DATE
               ELSE NULL
             END
         WHERE id = ${id}
